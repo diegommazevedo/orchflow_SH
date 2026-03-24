@@ -1,0 +1,20 @@
+Ao iniciar sessão: leia CURSOR_CONTEXT.md na raiz do projeto.
+
+Projeto: OrchFlow — SaaS de gestão com IA conversacional
+Stack: FastAPI + React/TypeScript + PostgreSQL/pgvector + Groq
+
+Leis absolutas (nunca violar):
+- Todo dado passa pelo ConformityEngine antes do banco
+- Agente nunca executa sem wizard de confirmação
+- Memória local consultada antes de chamar Groq
+- Título de tarefa: [Assignee] · Verbo + Objeto (sem nome no título)
+- Prazo armazenado como ISO 8601
+- delete_task = HIGH risk (wizard sempre)
+- delete_project = CRITICAL (bloqueado)
+- Perfil semântico persiste no banco (nunca em variável global)
+- Layout: Sidebar 220px | Board flex:1 | Chat 320px
+- CORS: 5173, 5174, 5175, 5180
+- Versão atual: 0.7.0
+- Modelo Groq: llama-3.3-70b-versatile
+
+Antes de gerar código: leia ARCHITECTURE.md na raiz.
