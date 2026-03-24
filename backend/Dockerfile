@@ -14,6 +14,6 @@ COPY . .
 
 RUN mkdir -p /app/logs
 
-ENV PORT=8010
-
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 2"]
+# Não hardcoda PORT — Railway injeta via env var
+# CMD é sobrescrito pelo startCommand do railway.toml
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
