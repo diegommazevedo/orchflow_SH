@@ -15,6 +15,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import type { ReviewTask } from '../../types'
 import { useConformField } from '../../hooks/useConformField'
+import { toArr } from '../../utils/array'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -166,22 +167,22 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
             {due.display} · {due.gap}
           </span>
         )}
-        {(task.dependencies?.length ?? 0) > 0 && (
-          <span className="rtl-dep-count">🔗 {(task.dependencies ?? []).length} dep.</span>
+        {toArr<string>(task.dependencies).length > 0 && (
+          <span className="rtl-dep-count">🔗 {toArr<string>(task.dependencies).length} dep.</span>
         )}
       </div>
 
       {/* Badges de dependência */}
-      {(task.dependencies?.length ?? 0) > 0 && (
+      {toArr<string>(task.dependencies).length > 0 && (
         <div className="rtl-dep-badges">
-          {(task.dependencies ?? []).map(depId => {
+          {toArr<string>(task.dependencies).map(depId => {
             const dep = allTasks.find(t => t.id === depId)
             return dep ? (
               <span key={depId} className="rtl-dep-badge">
                 depende de: {dep.title.length > 35 ? dep.title.slice(0, 35) + '…' : dep.title}
                 <button
                   className="rtl-dep-remove"
-                  onClick={() => onUpdate({ dependencies: (task.dependencies ?? []).filter(d => d !== depId) })}
+                  onClick={() => onUpdate({ dependencies: toArr<string>(task.dependencies).filter(d => d !== depId) })}
                 >×</button>
               </span>
             ) : null
@@ -341,11 +342,11 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
             )}
 
             {/* Subtasks sugeridas pelo agente */}
-            {(task.suggested_subtasks?.length ?? 0) > 0 && (
+            {toArr<string>(task.suggested_subtasks).length > 0 && (
               <div className="rtl-suggested">
-                <div className="rtl-field-label">Subtarefas sugeridas ({(task.suggested_subtasks ?? []).length})</div>
+                <div className="rtl-field-label">Subtarefas sugeridas ({toArr<string>(task.suggested_subtasks).length})</div>
                 <ul className="rtl-sub-list">
-                  {(task.suggested_subtasks ?? []).map((s, i) => (
+                  {toArr<string>(task.suggested_subtasks).map((s, i) => (
                     <li key={i} className="rtl-sub-item">
                       <span className="rtl-sub-text">{s}</span>
                       <button
@@ -362,7 +363,7 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
                             is_subtask: true,
                           })])
                           // Remove suggestion from list
-                          onUpdate({ suggested_subtasks: (task.suggested_subtasks ?? []).filter((_, j) => j !== i) })
+                          onUpdate({ suggested_subtasks: toArr<string>(task.suggested_subtasks).filter((_, j) => j !== i) })
                         }}
                       >+ criar card</button>
                     </li>
@@ -439,7 +440,7 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
                     onChange={e => {
                       const depId = e.target.value
                       if (depId) {
-                        const current = task.dependencies ?? []
+                        const current = toArr<string>(task.dependencies)
                         if (!current.includes(depId)) {
                           onUpdate({ dependencies: [...current, depId] })
                         }
@@ -449,7 +450,7 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
                   >
                     <option value="">— selecionar tarefa —</option>
                     {allTasks
-                      .filter(t => t.id !== task.id && !(task.dependencies ?? []).includes(t.id))
+                      .filter(t => t.id !== task.id && !toArr<string>(task.dependencies).includes(t.id))
                       .map(t => (
                         <option key={t.id} value={t.id}>
                           {t.title.length > 55 ? t.title.slice(0, 55) + '…' : t.title}
@@ -489,7 +490,7 @@ interface Props {
 }
 
 export function ReviewTaskList({ tasks: tasksProp, onChange, readonlyNote }: Props) {
-  const tasks = tasksProp ?? []
+  const tasks = toArr<ReviewTask>(tasksProp)
   const [filter, setFilter] = useState<FilterType>('all')
   const [activeId, setActiveId] = useState<string | null>(null)
 

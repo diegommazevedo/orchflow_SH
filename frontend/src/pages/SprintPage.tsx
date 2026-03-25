@@ -17,6 +17,7 @@ import { useState } from 'react'
 import type { Sprint } from '../types'
 import { Board, BoardSkeleton } from '../components/backlog/Board'
 import { SprintCard } from '../components/sprint/SprintCard'
+import { toArr } from '../utils/array'
 import {
   useSprints,
   useSprintBoard,
@@ -126,7 +127,7 @@ export function SprintPage({ projectId, activeSprint: propSprint, onSelectSprint
   const [showNewSprint, setShowNewSprint] = useState(false)
 
   const { data: sprintsRaw, isLoading: loadingSprints } = useSprints(projectId)
-  const sprints = sprintsRaw ?? []
+  const sprints = toArr<Sprint>(sprintsRaw)
 
   // Sprint a exibir: prop override ou sprint ativo do projeto
   const displaySprint: Sprint | null = propSprint

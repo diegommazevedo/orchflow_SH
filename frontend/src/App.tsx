@@ -18,7 +18,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { useProjects, useTasks } from './hooks/useData'
 import { useTheme } from './hooks/useTheme'
 import { useSprints, getActiveSprint } from './hooks/useSprints'
-import type { Sprint } from './types'
+import type { Project, Sprint, Task } from './types'
+import { toArr } from './utils/array'
 
 // ── AppInner: conteúdo principal (requer autenticação) ────────────────────────
 
@@ -71,9 +72,13 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { data: projects = [], isLoading: loadingProjects } = useProjects()
-  const { data: tasks = [],    isLoading: loadingTasks }    = useTasks(activeProjectId ?? undefined)
-  const { data: sprints = [] }                              = useSprints(activeProjectId)
+  const { data: projectsData, isLoading: loadingProjects } = useProjects()
+  const { data: tasksData, isLoading: loadingTasks }     = useTasks(activeProjectId ?? undefined)
+  const { data: sprintsData }                              = useSprints(activeProjectId)
+
+  const projects = toArr<Project>(projectsData)
+  const tasks    = toArr<Task>(tasksData)
+  const sprints  = toArr<Sprint>(sprintsData)
 
   const activeProject       = projects.find(p => p.id === activeProjectId)
   const isLoading           = loadingProjects || loadingTasks

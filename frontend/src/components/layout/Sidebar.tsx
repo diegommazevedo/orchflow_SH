@@ -13,6 +13,7 @@
 import { useState } from 'react'
 import type { Project, Sprint } from '../../types'
 import { useCreateProject } from '../../hooks/useData'
+import { toArr } from '../../utils/array'
 
 export type AppView = 'board' | 'matrix' | 'list' | 'timeline' | 'agents' | 'roi' | 'import' | 'sprint' | 'dashboard'
 
@@ -86,7 +87,7 @@ export function Sidebar({
   collapsed = false,
   onToggleCollapse,
 }: Props) {
-  const projects = projectsProp ?? []
+  const projects = toArr<Project>(projectsProp)
   const [addingProject, setAddingProject] = useState(false)
   const [projectName, setProjectName]     = useState('')
   const createProject = useCreateProject()
@@ -99,7 +100,7 @@ export function Sidebar({
     })
   }
 
-  const sprintList = sprints ?? []
+  const sprintList = toArr<Sprint>(sprints)
   const activeSprint = sprintList.find(s => s.status === 'active')
   const otherSprints = sprintList.filter(s => s.id !== activeSprint?.id).slice(0, 4)
 

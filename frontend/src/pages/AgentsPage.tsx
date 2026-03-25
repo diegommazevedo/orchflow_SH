@@ -18,6 +18,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import type { ProductivitySnapshot } from '../types'
+import { toArr } from '../utils/array'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -300,7 +301,7 @@ function ProductivitySection() {
     return <div className="ag-section ag-loading">Carregando produtividade…</div>
   }
 
-  const snaps  = data?.snapshots ?? []
+  const snaps  = toArr<ProductivitySnapshot>(data?.snapshots)
   const logMd  = data?.log_md ?? ''
 
   // Últimos 7 dias

@@ -19,6 +19,7 @@
 import { useState } from 'react'
 import type { ActivityLog } from '../../types'
 import { useActivityFeed, relativeTime, ACTION_ICONS, ACTION_LABELS } from '../../hooks/useComments'
+import { toArr } from '../../utils/array'
 
 interface Props {
   entityType: string
@@ -42,7 +43,7 @@ function ActivityEntry({ log }: { log: ActivityLog }) {
 
 export function ActivityFeed({ entityType, entityId }: Props) {
   const { logs: logsRaw, isLoading } = useActivityFeed(entityType, entityId)
-  const logs = logsRaw ?? []
+  const logs = toArr<ActivityLog>(logsRaw)
   const [collapsed, setCollapsed]  = useState(false)
 
   const visible = collapsed ? [] : logs.slice(0, 15)

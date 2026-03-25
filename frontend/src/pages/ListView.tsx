@@ -11,6 +11,7 @@ import { useTasks } from '../hooks/useData'
 import { TaskDetailPanel } from '../components/backlog/TaskDetailPanel'
 import { ExportMenu } from '../components/ui/ExportMenu'
 import type { Task, EisenhowerQuadrant, TaskStatus } from '../types'
+import { toArr } from '../utils/array'
 
 interface Props {
   activeProjectId: string | null
@@ -60,7 +61,7 @@ function SortIcon({ col, active, dir }: { col: string; active: boolean; dir: Sor
 
 export function ListView({ activeProjectId, projectName = '' }: Props) {
   const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
-  const tasks = tasksRaw ?? []
+  const tasks = toArr<Task>(tasksRaw)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [sortCol, setSortCol] = useState<SortCol>('title')
   const [sortDir, setSortDir] = useState<SortDir>('asc')

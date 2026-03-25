@@ -13,6 +13,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import type { Sprint, SprintBoard, Task } from '../types'
+import { toArr } from '../utils/array'
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ export function useSprints(projectId: string | null) {
     queryKey: ['sprints', projectId],
     queryFn:  () => fetchSprints(projectId!),
     enabled:  !!projectId,
-    select:   (data) => data ?? [],
+    select:   (data) => toArr<Sprint>(data),
   })
 }
 
@@ -86,7 +87,7 @@ export function useSprintBoard(sprintId: string | null) {
     enabled:  !!sprintId,
   })
   // Expõe tasks tipadas como Task[] para o Board.tsx
-  const tasks: Task[] = (query.data?.tasks ?? []) as Task[]
+  const tasks: Task[] = toArr<Task>(query.data?.tasks)
   return { ...query, tasks }
 }
 
@@ -161,7 +162,7 @@ export function useRemoveTaskFromSprint() {
 
 // ── Utilitário: sprint ativo (status = active) ────────────────────────────────
 export function getActiveSprint(sprints: Sprint[] | null | undefined): Sprint | null {
-  return (sprints ?? []).find(s => s.status === 'active') ?? null
+  return toArr<Sprint>(sprints).find(s => s.status === 'active') ?? null
 }
 
 // ── Utilitário: formatação de período ────────────────────────────────────────

@@ -19,6 +19,7 @@ import { TaskCard } from './TaskCard'
 import { TaskDetailPanel } from './TaskDetailPanel'
 import { useUpdateTaskStatus, useCreateTask } from '../../hooks/useData'
 import { ExportMenu } from '../ui/ExportMenu'
+import { toArr } from '../../utils/array'
 
 interface Props {
   tasks: Task[]
@@ -91,7 +92,7 @@ function DroppableColumn({
 
 // ── Board principal ───────────────────────────────────────────────────────────
 export function Board({ tasks: tasksProp, projectId, projectName = '', onAddTask }: Props) {
-  const tasks = tasksProp ?? []
+  const tasks = toArr<Task>(tasksProp)
   const [activeTask, setActiveTask]   = useState<Task | null>(null)
   const [detailTask, setDetailTask]   = useState<Task | null>(null)
   const [newTitle, setNewTitle]       = useState('')

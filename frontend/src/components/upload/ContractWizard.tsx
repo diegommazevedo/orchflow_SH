@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import type { ContractParseResult, ContractTask, EisenhowerQuadrant, ReviewTask } from '../../types'
 import { ReviewTaskList } from './ReviewTaskList'
+import { toArr } from '../../utils/array'
 
 function gapHint(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -37,7 +38,7 @@ function contractToReview(ct: ContractTask): ReviewTask {
     assignee_hint: ct.assignee_hint ?? undefined,
     source_clause: ct.source_clause ?? undefined,
     review_notes: ct.review_notes ?? undefined,
-    suggested_subtasks: ct.suggested_subtasks ?? [],
+    suggested_subtasks: toArr<string>(ct.suggested_subtasks),
     is_discarded: false,
     is_expanded: false,
     is_subtask: false,
@@ -67,7 +68,7 @@ interface Props {
 export function ContractWizard({ data, onConfirm, onCancel }: Props) {
   const [project, setProject] = useState({ ...data.project })
   const [reviewTasks, setReviewTasks] = useState<ReviewTask[]>(() =>
-    (data.tasks ?? []).map(contractToReview)
+    toArr<ContractTask>(data.tasks).map(contractToReview)
   )
 
   const activeTasks = reviewTasks.filter(t => !t.is_discarded)

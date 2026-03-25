@@ -18,6 +18,7 @@ import type { SheetParseResult, SheetMapping, SheetTask, ReviewTask } from '../.
 import type { FieldType } from '../../hooks/useDebouncedConform'
 import { ReviewTaskList } from './ReviewTaskList'
 import { useDebouncedConform } from '../../hooks/useDebouncedConform'
+import { toArr } from '../../utils/array'
 
 const FIELD_LABELS: Record<keyof SheetMapping, string> = {
   title:       'Título (obrigatório)',
@@ -192,9 +193,9 @@ interface Step1Props {
 }
 
 function Step1({ data, mapping, defaults, confidence, onChange, onDefaultsChange, onNext, onCancel }: Step1Props) {
-  const headers = data.headers ?? []
+  const headers = toArr<string>(data.headers)
   const notes = data.notes ?? ''
-  const sample_tasks = data.sample_tasks ?? []
+  const sample_tasks = toArr<SheetTask>(data.sample_tasks)
 
   function setField(field: keyof SheetMapping, val: string) {
     onChange({ ...mapping, [field]: val === '' ? null : val })
@@ -368,7 +369,10 @@ function Step2({
   onBack, onConfirm, loading, error,
 }: Step2Props) {
   const [showCreate, setShowCreate] = useState(false)
-  const allProjects = [...(extraProjects ?? []), ...(projects ?? [])]
+  const allProjects = [
+    ...toArr<{ id: string; name: string }>(extraProjects),
+    ...toArr<{ id: string; name: string }>(projects),
+  ]
   const activeTasks = reviewTasks.filter(t => !t.is_discarded)
 
   function handleSelectChange(val: string) {
@@ -392,7 +396,7 @@ function Step2({
         <span className="sw-step-badge">2 de 2</span>
         <h3 className="sw-step-title">Revisar tasks e confirmar</h3>
         <p className="sw-step-sub">
-          Amostra de {(data.sample_tasks ?? []).length} tasks.
+          Amostra de {toArr<SheetTask>(data.sample_tasks).length} tasks.
           Total a importar: <strong>{data.total_rows}</strong> linhas ({data.format.toUpperCase()}).
         </p>
       </div>
@@ -477,14 +481,14 @@ interface Props {
 }
 
 export function SheetWizard({ data, projects: projectsProp, loading, error, onConfirm, onCancel }: Props) {
-  const projects = projectsProp ?? []
+  const projects = toArr<{ id: string; name: string }>(projectsProp)
   const [step, setStep] = useState<1 | 2>(1)
   const [mapping, setMapping] = useState<SheetMapping>({ ...(data.mapping ?? {}) })
   const [defaults, setDefaults] = useState<Record<string, string>>({})
   const [projectId, setProjectId] = useState<string>(projects[0]?.id ?? '')
   const [extraProjects, setExtraProjects] = useState<{ id: string; name: string }[]>([])
   const [reviewTasks, setReviewTasks] = useState<ReviewTask[]>(() =>
-    (data.sample_tasks ?? []).map(sheetToReview)
+    toArr<SheetTask>(data.sample_tasks).map(sheetToReview)
   )
 
   function handleProjectCreated(p: { id: string; name: string }) {

@@ -11,6 +11,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import type { Comment, ActivityLog, ActivityAction } from '../types'
+import { toArr } from '../utils/array'
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ export function useComments(taskId: string | null) {
 
   const addComment = useMutation({
     mutationFn: ({ body, mentions }: { body: string; mentions?: string[] }) =>
-      postComment(taskId!, body, mentions ?? []),
+      postComment(taskId!, body, toArr<string>(mentions)),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['comments', taskId] }),
   })
 
@@ -69,7 +70,7 @@ export function useComments(taskId: string | null) {
   })
 
   return {
-    comments:      query.data ?? [],
+    comments:      toArr<Comment>(query.data),
     isLoading:     query.isLoading,
     addComment:    (body: string, mentions?: string[]) =>
       addComment.mutateAsync({ body, mentions }),
@@ -92,7 +93,7 @@ export function useActivityFeed(
   })
 
   return {
-    logs:      query.data ?? [],
+    logs:      toArr<ActivityLog>(query.data),
     isLoading: query.isLoading,
   }
 }
@@ -135,7 +136,7 @@ export const ACTION_ICONS: Record<ActivityAction, string> = {
 export const ACTION_LABELS: Record<ActivityAction, (meta: Record<string, unknown>) => string> = {
   created:            ()  => 'criada',
   moved:              (m) => `movida de ${m.from} para ${m.to}`,
-  updated:            (m) => `campos atualizados: ${(m.changed_fields as string[] ?? []).join(', ')}`,
+  updated:            (m) => `campos atualizados: ${toArr<string>(m.changed_fields).join(', ')}`,
   commented:          ()  => 'comentário adicionado',
   deleted:            (m) => `removida${m.title ? `: "${m.title}"` : ''}`,
   assigned:           (m) => `atribuída a ${m.assignee ?? '?'}`,

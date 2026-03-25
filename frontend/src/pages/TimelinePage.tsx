@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react'
 import { useTasks } from '../hooks/useData'
 import { TaskDetailPanel } from '../components/backlog/TaskDetailPanel'
 import type { Task } from '../types'
+import { toArr } from '../utils/array'
 
 interface Props {
   activeProjectId: string | null
@@ -65,7 +66,7 @@ interface WeekGroup { key: string; label: string; tasks: Task[] }
 
 export function TimelinePage({ activeProjectId }: Props) {
   const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
-  const tasks = tasksRaw ?? []
+  const tasks = toArr<Task>(tasksRaw)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
 
   const { groups, noDate } = useMemo(() => {

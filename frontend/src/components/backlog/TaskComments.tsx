@@ -17,6 +17,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useComments, relativeTime } from '../../hooks/useComments'
 import type { Comment } from '../../types'
+import { toArr } from '../../utils/array'
 
 // Nomes extraídos dinamicamente das iniciais dos cards (lista estática por ora)
 const DEFAULT_MENTION_HINTS = ['zé', 'maria', 'ana', 'pedro', 'lucas', 'default']
@@ -87,7 +88,7 @@ function CommentCard({
 // ── Componente principal ──────────────────────────────────────────────────────
 export function TaskComments({ taskId }: Props) {
   const { comments: commentsRaw, isLoading, addComment, deleteComment, isSending } = useComments(taskId)
-  const comments = commentsRaw ?? []
+  const comments = toArr<Comment>(commentsRaw)
 
   const [draft, setDraft]           = useState('')
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)

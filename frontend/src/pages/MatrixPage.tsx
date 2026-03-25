@@ -24,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useTasks, useUpdateTask } from '../hooks/useData'
 import { TaskDetailPanel } from '../components/backlog/TaskDetailPanel'
 import type { Task, EisenhowerQuadrant } from '../types'
+import { toArr } from '../utils/array'
 
 interface Props {
   activeProjectId: string | null
@@ -197,7 +198,7 @@ function QuadrantCell({
 
 export function MatrixPage({ activeProjectId }: Props) {
   const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
-  const tasks = tasksRaw ?? []
+  const tasks = toArr<Task>(tasksRaw)
   const updateTask = useUpdateTask()
   const patchPending = updateTask.isPending
   const [detailTask, setDetailTask] = useState<Task | null>(null)

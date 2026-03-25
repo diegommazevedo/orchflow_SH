@@ -20,7 +20,8 @@ import { SheetWizard } from '../components/upload/SheetWizard'
 import { useProjects } from '../hooks/useData'
 import { confirmContractImport } from '../services/api'
 import { confirmSheetImport } from '../services/sheetApi'
-import type { ContractParseResult, SheetParseResult, SheetMapping } from '../types'
+import type { ContractParseResult, SheetParseResult, SheetMapping, Project } from '../types'
+import { toArr } from '../utils/array'
 
 // ── Histórico ─────────────────────────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ interface Props {
 export function ImportPage({ onBack, onProjectCreated }: Props) {
   const qc = useQueryClient()
   const { data: projectsRaw } = useProjects()
-  const projects = projectsRaw ?? []
+  const projects = toArr<Project>(projectsRaw)
 
   const [contractData, setContractData] = useState<ContractParseResult | null>(null)
   const [sheetData, setSheetData] = useState<SheetParseResult | null>(null)

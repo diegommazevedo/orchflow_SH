@@ -17,6 +17,7 @@
 import { useState } from 'react'
 import { useRoiData, useHeatmap } from '../hooks/useAnalytics'
 import type { DailyFocus, ProjectRoi, HeatmapDay, RoiSummaryData } from '../types'
+import { toArr } from '../utils/array'
 
 const EMPTY_ROI_SUMMARY: RoiSummaryData = {
   total_focus_minutes: 0,
@@ -96,7 +97,7 @@ function KpiCard({ icon, value, label, sub, accent }: KpiCardProps) {
 // ── Bloco 2 — Gráfico de barras ────────────────────────────────────────────────
 function BarChart({ data }: { data: DailyFocus[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; d: DailyFocus } | null>(null)
-  const rows = data ?? []
+  const rows = toArr<DailyFocus>(data)
 
   const maxMin = Math.max(...rows.map(d => d.minutes), 1)
   const W = 560; const H = 160; const PAD_L = 36; const PAD_B = 28
@@ -304,7 +305,7 @@ const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 function Heatmap({ data }: { data: HeatmapDay[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; d: HeatmapDay } | null>(null)
-  const heat = data ?? []
+  const heat = toArr<HeatmapDay>(data)
 
   // Organiza em grade: primeiro dia alinhado à coluna da semana correta
   const CELL = 12; const GAP = 2; const STEP = CELL + GAP
@@ -429,9 +430,9 @@ export function DashboardPage() {
   }
 
   const summary: RoiSummaryData = { ...EMPTY_ROI_SUMMARY, ...(roi.summary ?? {}) }
-  const projects = roi.projects ?? []
+  const projects = toArr<ProjectRoi>(roi.projects)
   const quadrant_distribution = roi.quadrant_distribution ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
-  const daily_focus = roi.daily_focus ?? []
+  const daily_focus = toArr<DailyFocus>(roi.daily_focus)
   const totalTasks = Object.values(quadrant_distribution).reduce((s, v) => s + v, 0)
 
   return (
@@ -518,7 +519,7 @@ export function DashboardPage() {
           <div className="skeleton skeleton-line" style={{ height: 120 }} />
         ) : (
           <>
-            <Heatmap data={heat ?? []} />
+            <Heatmap data={toArr<HeatmapDay>(heat)} />
             <div className="db-heat-legend">
               <span className="db-heat-legend-label">menos</span>
               {HEAT_COLORS.map((c, i) => (

@@ -10,7 +10,8 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
-import type { RoiData, HeatmapDay } from '../types'
+import type { RoiData, HeatmapDay, DailyFocus, ProjectRoi } from '../types'
+import { toArr } from '../utils/array'
 
 const STALE = 5 * 60 * 1000   // 5 minutos
 
@@ -21,6 +22,14 @@ export function useRoiData(userId = 'default') {
       const res = await axios.get(`/api/analytics/roi/${userId}`)
       return res.data as RoiData
     },
+    select: (d) =>
+      d == null
+        ? d
+        : {
+            ...d,
+            projects: toArr<ProjectRoi>(d.projects),
+            daily_focus: toArr<DailyFocus>(d.daily_focus),
+          },
     staleTime: STALE,
   })
 }
@@ -30,7 +39,7 @@ export function useHeatmap(userId = 'default') {
     queryKey: ['analytics-heatmap', userId],
     queryFn:  async () => {
       const res = await axios.get(`/api/analytics/heatmap/${userId}`)
-      return (res.data ?? []) as HeatmapDay[]
+      return toArr<HeatmapDay>(res.data)
     },
     staleTime: STALE,
   })

@@ -20,6 +20,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Task, FocusMood } from '../../types'
 import { useFocus } from '../../hooks/useFocus'
+import { toArr } from '../../utils/array'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ interface Props {
 // ── Widget ────────────────────────────────────────────────────────────────────
 
 export function FocusWidget({ tasks: tasksProp, projectId }: Props) {
-  const tasks = tasksProp ?? []
+  const tasks = toArr<Task>(tasksProp)
   const focus = useFocus()
 
   // Estados de UI locais

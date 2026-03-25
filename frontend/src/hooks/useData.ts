@@ -3,14 +3,15 @@ import {
   getProjects, createProject, deleteProject,
   getTasks, createTask, updateTaskStatus, addTaskTime, deleteTask, updateTask,
 } from '../services/api'
-import type { EisenhowerQuadrant, TaskStatus } from '../types'
+import type { EisenhowerQuadrant, Task, TaskStatus, Project } from '../types'
+import { toArr } from '../utils/array'
 
 // ── PROJECTS ──────────────────────────────────────────
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
-    select: (data) => data ?? [],
+    select: (data) => toArr<Project>(data),
   })
 }
 
@@ -37,7 +38,7 @@ export function useTasks(projectId?: string) {
     queryKey: ['tasks', projectId],
     queryFn: () => getTasks(projectId),
     enabled: !!projectId,
-    select: (data) => data ?? [],
+    select: (data) => toArr<Task>(data),
   })
 }
 

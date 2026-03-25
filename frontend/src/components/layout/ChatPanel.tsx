@@ -9,6 +9,7 @@ import { confirmContractImport } from '../../services/api'
 import { confirmSheetImport } from '../../services/sheetApi'
 import type { ContractParseResult, SheetParseResult, SheetMapping } from '../../types'
 import { useProjects } from '../../hooks/useData'
+import { toArr } from '../../utils/array'
 
 // ── Tipos ──────────────────────────────────────────────────
 interface IntentParams {
@@ -84,7 +85,7 @@ function Field({ label, value, sub, onChange, type = 'text', options }: {
       <div className="wp-val-wrap">
         {type === 'select' && options ? (
           <select className="wp-select" value={value} onChange={e => onChange(e.target.value)}>
-            {(options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {toArr<{ value: string; label: string }>(options).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         ) : editing ? (
           <input autoFocus className="wp-input" value={value}
@@ -163,8 +164,8 @@ function WizardCard({ intent: init, state, onConfirm, onCancel }: {
                    sub={dueDate.overdue ? `⚠ ${dueDate.gap}` : dueDate.gap}
                    onChange={v => up('due_date', v)} />
           )}
-          {(intent.missing_fields ?? []).length > 0 && (
-            <div className="wp-missing">⚠ faltando: {(intent.missing_fields ?? []).join(', ')}</div>
+          {toArr<string>(intent.missing_fields).length > 0 && (
+            <div className="wp-missing">⚠ faltando: {toArr<string>(intent.missing_fields).join(', ')}</div>
           )}
         </div>
       )}
