@@ -21,14 +21,25 @@ from app.routers.auth import router as auth_router
 
 app = FastAPI(title="OrchFlow API", version="1.4.0")
 
+import os as _os
+
+_DEFAULT_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5180",
+    # Produção — Vercel
+    "https://orchflow-sh.vercel.app",
+    "https://orchflow-sh-git-main-diegommazevedos-projects.vercel.app",
+    "https://orchflow-olr0iao3c-diegommazevedos-projects.vercel.app",
+]
+_extra = _os.getenv("ALLOWED_ORIGINS", "")
+_extra_list = [o.strip() for o in _extra.split(",") if o.strip()]
+_all_origins = list(dict.fromkeys(_DEFAULT_ORIGINS + _extra_list))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5180",
-    ],
+    allow_origins=_all_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
