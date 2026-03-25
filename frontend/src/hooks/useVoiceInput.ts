@@ -82,7 +82,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
 
         try {
           const { data } = await api.post('/voice/transcribe', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            headers: { 'Content-Type': undefined },
           })
           setTranscript(data.text)
           setState('done')

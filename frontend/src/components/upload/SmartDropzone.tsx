@@ -85,7 +85,9 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       // ── 1. Detectar tipo ─────────────────────────────────────────────────
       const fd1 = new FormData()
       fd1.append('file', file)
-      const { data: detect } = await api.post<DetectResult>('/upload/detect', fd1)
+      const { data: detect } = await api.post<DetectResult>('/upload/detect', fd1, {
+        headers: { 'Content-Type': undefined },
+      })
 
       const info = TYPE_INFO[detect.file_type] ?? TYPE_INFO.unknown
       setDetection({
@@ -104,19 +106,25 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       switch (detect.file_type) {
         case 'contract_pdf': {
           fd2.append('file', file)
-          const { data } = await api.post<ContractParseResult>('/upload/contract', fd2)
+          const { data } = await api.post<ContractParseResult>('/upload/contract', fd2, {
+            headers: { 'Content-Type': undefined },
+          })
           onContractResult(data)
           break
         }
         case 'sheet': {
           fd2.append('file', file)
-          const { data } = await api.post<SheetParseResult>('/upload/sheet', fd2)
+          const { data } = await api.post<SheetParseResult>('/upload/sheet', fd2, {
+            headers: { 'Content-Type': undefined },
+          })
           onSheetResult(data)
           break
         }
         case 'audio': {
           fd2.append('audio', file)
-          const { data } = await api.post<{ text: string }>('/voice/transcribe', fd2)
+          const { data } = await api.post<{ text: string }>('/voice/transcribe', fd2, {
+            headers: { 'Content-Type': undefined },
+          })
           onAudioTranscript(data.text)
           break
         }
@@ -140,10 +148,16 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       setPhase('idle')
       setDetection(null)
     } catch (e) {
-      const msg = axios.isAxiosError(e)
-        ? (e.response?.data?.detail ?? e.message)
-        : 'Falha ao processar arquivo.'
-      setErrMsg(String(msg))
+      let msg = 'Falha ao processar arquivo.'
+      if (axios.isAxiosError(e)) {
+        const detail = e.response?.data?.detail
+        msg = Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : e.message
+      }
+      setErrMsg(msg)
       setPhase('error')
     }
   }, [onContractResult, onSheetResult, onAudioTranscript])

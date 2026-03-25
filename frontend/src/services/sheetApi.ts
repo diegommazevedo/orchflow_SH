@@ -5,7 +5,7 @@ export const uploadSheetFile = async (file: File): Promise<SheetParseResult> => 
   const fd = new FormData()
   fd.append('file', file)
   const { data } = await api.post<SheetParseResult>('/upload/sheet', fd, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined },
   })
   return data
 }
