@@ -244,10 +244,11 @@ function DonutChart({ dist, total }: { dist: Record<string, number>; total: numb
 
 // ── Bloco 4 — Lista de projetos ────────────────────────────────────────────────
 function ProjectRow({ proj }: { proj: ProjectRoi }) {
-  const pct = proj.tasks_total > 0
-    ? Math.round((proj.tasks_done / proj.tasks_total) * 100)
+  const pct = (proj.tasks_total ?? 0) > 0
+    ? Math.round(((proj.tasks_done ?? 0) / proj.tasks_total) * 100)
     : 0
-  const totalQ = Object.values(proj.tasks_by_quadrant).reduce((s, v) => s + v, 0) || 1
+  const byQuadrant = proj.tasks_by_quadrant ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
+  const totalQ = Object.values(byQuadrant).reduce((s, v) => s + (v ?? 0), 0) || 1
 
   return (
     <div className="db-proj-row">
@@ -271,7 +272,7 @@ function ProjectRow({ proj }: { proj: ProjectRoi }) {
       {/* Mini distribuição de quadrantes */}
       <div className="db-proj-quad-row">
         {(['q1', 'q2', 'q3', 'q4'] as const).map(q => {
-          const v = proj.tasks_by_quadrant[q] ?? 0
+          const v = byQuadrant[q] ?? 0
           const w = Math.round((v / totalQ) * 100)
           return w > 0 ? (
             <div
@@ -415,8 +416,11 @@ export function DashboardPage() {
     )
   }
 
-  const { summary, projects, quadrant_distribution, daily_focus } = roi
-  const totalTasks = Object.values(quadrant_distribution).reduce((s, v) => s + v, 0)
+  const summary              = roi.summary              ?? {}
+  const projects             = roi.projects             ?? []
+  const quadrant_distribution = roi.quadrant_distribution ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
+  const daily_focus          = roi.daily_focus          ?? []
+  const totalTasks = Object.values(quadrant_distribution).reduce((s, v) => s + (v ?? 0), 0)
 
   return (
     <div className="db-wrapper">
@@ -424,8 +428,8 @@ export function DashboardPage() {
       <div className="db-header">
         <h2 className="db-title">Dashboard ROI</h2>
         <p className="db-subtitle">
-          Produtividade real · {summary.most_active_project
-            ? `Projeto mais ativo: ${summary.most_active_project}`
+          Produtividade real · {(summary as any).most_active_project
+            ? `Projeto mais ativo: ${(summary as any).most_active_project}`
             : 'Nenhum projeto ativo ainda'}
         </p>
       </div>
@@ -434,29 +438,29 @@ export function DashboardPage() {
       <div className="db-kpi-row">
         <KpiCard
           icon="⏱"
-          value={fmtMin(summary.total_focus_minutes_week)}
+          value={fmtMin((summary as any).total_focus_minutes_week ?? 0)}
           label="Foco esta semana"
-          sub={`Total: ${fmtMin(summary.total_focus_minutes)}`}
+          sub={`Total: ${fmtMin((summary as any).total_focus_minutes ?? 0)}`}
         />
         <KpiCard
           icon="✓"
-          value={String(summary.tasks_completed_total)}
+          value={String((summary as any).tasks_completed_total ?? 0)}
           label="Tasks concluídas"
-          sub={`Esta semana: ${summary.tasks_completed_week}`}
+          sub={`Esta semana: ${(summary as any).tasks_completed_week ?? 0}`}
         />
         <KpiCard
           icon="🎯"
-          value={`${summary.focus_score}%`}
+          value={`${(summary as any).focus_score ?? 0}%`}
           label="Score de foco"
           sub="Tempo em Q1+Q2"
-          accent={summary.focus_score >= 60}
+          accent={((summary as any).focus_score ?? 0) >= 60}
         />
         <KpiCard
           icon="🔥"
-          value={String(summary.current_streak_days)}
+          value={String((summary as any).current_streak_days ?? 0)}
           label="Dias consecutivos"
-          sub={summary.current_streak_days > 0 ? 'sequência ativa' : 'inicie hoje!'}
-          accent={summary.current_streak_days >= 3}
+          sub={((summary as any).current_streak_days ?? 0) > 0 ? 'sequência ativa' : 'inicie hoje!'}
+          accent={((summary as any).current_streak_days ?? 0) >= 3}
         />
       </div>
 
