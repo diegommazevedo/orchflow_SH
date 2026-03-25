@@ -53,6 +53,8 @@ api.interceptors.response.use(
   },
 )
 
+export default api
+
 // ── PROJECTS ──────────────────────────────────────────
 export const getProjects = async (): Promise<Project[]> => {
   const { data } = await api.get('/projects/')
