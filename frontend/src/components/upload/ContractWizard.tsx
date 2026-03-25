@@ -67,7 +67,7 @@ interface Props {
 export function ContractWizard({ data, onConfirm, onCancel }: Props) {
   const [project, setProject] = useState({ ...data.project })
   const [reviewTasks, setReviewTasks] = useState<ReviewTask[]>(() =>
-    data.tasks.map(contractToReview)
+    (data.tasks ?? []).map(contractToReview)
   )
 
   const activeTasks = reviewTasks.filter(t => !t.is_discarded)

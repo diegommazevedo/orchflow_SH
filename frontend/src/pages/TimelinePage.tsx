@@ -64,7 +64,8 @@ function weekLabel(key: string): string {
 interface WeekGroup { key: string; label: string; tasks: Task[] }
 
 export function TimelinePage({ activeProjectId }: Props) {
-  const { data: tasks = [], isLoading } = useTasks(activeProjectId ?? undefined)
+  const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
+  const tasks = tasksRaw ?? []
   const [detailTask, setDetailTask] = useState<Task | null>(null)
 
   const { groups, noDate } = useMemo(() => {

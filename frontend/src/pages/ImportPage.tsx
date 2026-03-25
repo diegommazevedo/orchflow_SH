@@ -38,7 +38,8 @@ const HISTORY_MAX = 5
 
 function loadHistory(): HistoryItem[] {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as HistoryItem[]
+    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as unknown
+    return Array.isArray(raw) ? (raw as HistoryItem[]) : []
   } catch {
     return []
   }
@@ -71,7 +72,8 @@ interface Props {
 
 export function ImportPage({ onBack, onProjectCreated }: Props) {
   const qc = useQueryClient()
-  const { data: projects = [] } = useProjects()
+  const { data: projectsRaw } = useProjects()
+  const projects = projectsRaw ?? []
 
   const [contractData, setContractData] = useState<ContractParseResult | null>(null)
   const [sheetData, setSheetData] = useState<SheetParseResult | null>(null)

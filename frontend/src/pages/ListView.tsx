@@ -59,7 +59,8 @@ function SortIcon({ col, active, dir }: { col: string; active: boolean; dir: Sor
 }
 
 export function ListView({ activeProjectId, projectName = '' }: Props) {
-  const { data: tasks = [], isLoading } = useTasks(activeProjectId ?? undefined)
+  const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
+  const tasks = tasksRaw ?? []
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [sortCol, setSortCol] = useState<SortCol>('title')
   const [sortDir, setSortDir] = useState<SortDir>('asc')

@@ -41,7 +41,8 @@ function ActivityEntry({ log }: { log: ActivityLog }) {
 }
 
 export function ActivityFeed({ entityType, entityId }: Props) {
-  const { logs, isLoading } = useActivityFeed(entityType, entityId)
+  const { logs: logsRaw, isLoading } = useActivityFeed(entityType, entityId)
+  const logs = logsRaw ?? []
   const [collapsed, setCollapsed]  = useState(false)
 
   const visible = collapsed ? [] : logs.slice(0, 15)

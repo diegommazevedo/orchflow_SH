@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import api from '../../services/api'
+import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
 import { SmartDropzone } from '../upload/SmartDropzone'
@@ -84,7 +84,7 @@ function Field({ label, value, sub, onChange, type = 'text', options }: {
       <div className="wp-val-wrap">
         {type === 'select' && options ? (
           <select className="wp-select" value={value} onChange={e => onChange(e.target.value)}>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {(options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         ) : editing ? (
           <input autoFocus className="wp-input" value={value}
@@ -163,8 +163,8 @@ function WizardCard({ intent: init, state, onConfirm, onCancel }: {
                    sub={dueDate.overdue ? `⚠ ${dueDate.gap}` : dueDate.gap}
                    onChange={v => up('due_date', v)} />
           )}
-          {intent.missing_fields.length > 0 && (
-            <div className="wp-missing">⚠ faltando: {intent.missing_fields.join(', ')}</div>
+          {(intent.missing_fields ?? []).length > 0 && (
+            <div className="wp-missing">⚠ faltando: {(intent.missing_fields ?? []).join(', ')}</div>
           )}
         </div>
       )}
@@ -327,12 +327,12 @@ export function ChatPanel({
     setLoading(true)
 
     try {
-      const { data } = await api.post<Intent>('/agent/interpret', {
+      const { data } = await axios.post<Intent>('/api/agent/interpret', {
         message: text, project_id: projectId, user_id: 'default',
       })
 
       if (data.wizard_mode === 'silent' && projectId) {
-        const { data: result } = await api.post('/agent/execute', {
+        const { data: result } = await axios.post('/api/agent/execute', {
           intent: data, project_id: projectId, user_id: 'default',
         })
         showToast(result.message)
@@ -403,7 +403,7 @@ export function ChatPanel({
     if (!projectId) return
     setWizState(idx, 'executing')
     try {
-      const { data } = await api.post('/agent/execute', {
+      const { data } = await axios.post('/api/agent/execute', {
         intent, project_id: projectId, user_id: 'default',
       })
       setWizState(idx, 'confirmed')

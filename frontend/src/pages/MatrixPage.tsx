@@ -196,7 +196,8 @@ function QuadrantCell({
 }
 
 export function MatrixPage({ activeProjectId }: Props) {
-  const { data: tasks = [], isLoading } = useTasks(activeProjectId ?? undefined)
+  const { data: tasksRaw, isLoading } = useTasks(activeProjectId ?? undefined)
+  const tasks = tasksRaw ?? []
   const updateTask = useUpdateTask()
   const patchPending = updateTask.isPending
   const [detailTask, setDetailTask] = useState<Task | null>(null)

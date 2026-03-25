@@ -125,7 +125,8 @@ function NewSprintModal({
 export function SprintPage({ projectId, activeSprint: propSprint, onSelectSprint }: Props) {
   const [showNewSprint, setShowNewSprint] = useState(false)
 
-  const { data: sprints = [], isLoading: loadingSprints } = useSprints(projectId)
+  const { data: sprintsRaw, isLoading: loadingSprints } = useSprints(projectId)
+  const sprints = sprintsRaw ?? []
 
   // Sprint a exibir: prop override ou sprint ativo do projeto
   const displaySprint: Sprint | null = propSprint

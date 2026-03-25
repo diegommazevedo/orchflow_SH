@@ -7,7 +7,11 @@ import type { EisenhowerQuadrant, TaskStatus } from '../types'
 
 // ── PROJECTS ──────────────────────────────────────────
 export function useProjects() {
-  return useQuery({ queryKey: ['projects'], queryFn: getProjects })
+  return useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+    select: (data) => data ?? [],
+  })
 }
 
 export function useCreateProject() {
@@ -33,6 +37,7 @@ export function useTasks(projectId?: string) {
     queryKey: ['tasks', projectId],
     queryFn: () => getTasks(projectId),
     enabled: !!projectId,
+    select: (data) => data ?? [],
   })
 }
 

@@ -16,7 +16,7 @@
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '../services/api'
+import axios from 'axios'
 import type { ProductivitySnapshot } from '../types'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function useMemoryStats() {
   return useQuery<MemoryStats>({
     queryKey: ['memory-stats'],
     queryFn: async () => {
-      const { data } = await api.get('/agent/memory/stats/default')
+      const { data } = await axios.get('/api/agent/memory/stats/default')
       return data
     },
     refetchInterval: 30_000,
@@ -88,7 +88,7 @@ function useProfile() {
   return useQuery<UserProfile>({
     queryKey: ['agent-profile'],
     queryFn: async () => {
-      const { data } = await api.get('/agent/profile/default')
+      const { data } = await axios.get('/api/agent/profile/default')
       return data
     },
   })
@@ -101,7 +101,7 @@ function AgentCard({ agent }: { agent: AgentInfo }) {
     queryKey: ['agent-ping', agent.id],
     queryFn: async () => {
       if (!agent.checkUrl) return { ok: true }
-      await api.get(agent.checkUrl.replace('/api/', '/'))
+      await axios.get(agent.checkUrl)
       return { ok: true }
     },
     retry: 1,
@@ -133,7 +133,7 @@ function MemorySection({ stats }: { stats: MemoryStats }) {
     ? Math.round((stats.total_hits / totalRequests) * 100)
     : 0
 
-  const topActions = Object.entries(stats.top_actions)
+  const topActions = Object.entries(stats.top_actions ?? {})
     .sort(([, a], [, b]) => b - a)
     .slice(0, 6)
 
@@ -210,7 +210,7 @@ function DictSection({ profile }: { profile: UserProfile }) {
 
   const removeEntry = useMutation({
     mutationFn: async (key: string) => {
-      await api.patch(`/agent/profile/${profile.user_id}`, {
+      await axios.patch(`/api/agent/profile/${profile.user_id}`, {
         personal_dict_remove: [key],
       })
     },
@@ -260,11 +260,13 @@ function DictSection({ profile }: { profile: UserProfile }) {
 
 // ── Hook de produtividade ─────────────────────────────────────────────────────
 
+const API = 'http://localhost:8010'
+
 function useProductivity(userId = 'default') {
   return useQuery({
     queryKey: ['productivity', userId],
     queryFn: async () => {
-      const res = await api.get(`/focus/productivity/${userId}`)
+      const res = await axios.get(`${API}/api/focus/productivity/${userId}`)
       return res.data as { snapshots: ProductivitySnapshot[]; log_md: string }
     },
     staleTime: 60_000,

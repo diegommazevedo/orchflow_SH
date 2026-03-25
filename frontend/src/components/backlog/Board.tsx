@@ -90,7 +90,8 @@ function DroppableColumn({
 }
 
 // ── Board principal ───────────────────────────────────────────────────────────
-export function Board({ tasks, projectId, projectName = '', onAddTask }: Props) {
+export function Board({ tasks: tasksProp, projectId, projectName = '', onAddTask }: Props) {
+  const tasks = tasksProp ?? []
   const [activeTask, setActiveTask]   = useState<Task | null>(null)
   const [detailTask, setDetailTask]   = useState<Task | null>(null)
   const [newTitle, setNewTitle]       = useState('')

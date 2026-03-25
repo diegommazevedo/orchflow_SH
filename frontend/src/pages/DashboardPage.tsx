@@ -16,7 +16,17 @@
  */
 import { useState } from 'react'
 import { useRoiData, useHeatmap } from '../hooks/useAnalytics'
-import type { DailyFocus, ProjectRoi, HeatmapDay } from '../types'
+import type { DailyFocus, ProjectRoi, HeatmapDay, RoiSummaryData } from '../types'
+
+const EMPTY_ROI_SUMMARY: RoiSummaryData = {
+  total_focus_minutes: 0,
+  total_focus_minutes_week: 0,
+  tasks_completed_total: 0,
+  tasks_completed_week: 0,
+  focus_score: 0,
+  most_active_project: null,
+  current_streak_days: 0,
+}
 
 // ── Constantes de cor ─────────────────────────────────────────────────────────
 const Q_COLORS: Record<string, string> = {
@@ -86,11 +96,12 @@ function KpiCard({ icon, value, label, sub, accent }: KpiCardProps) {
 // ── Bloco 2 — Gráfico de barras ────────────────────────────────────────────────
 function BarChart({ data }: { data: DailyFocus[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; d: DailyFocus } | null>(null)
+  const rows = data ?? []
 
-  const maxMin = Math.max(...data.map(d => d.minutes), 1)
+  const maxMin = Math.max(...rows.map(d => d.minutes), 1)
   const W = 560; const H = 160; const PAD_L = 36; const PAD_B = 28
   const chartW = W - PAD_L; const chartH = H - PAD_B
-  const barW   = Math.floor(chartW / data.length) - 4
+  const barW   = Math.floor(chartW / Math.max(rows.length, 1)) - 4
 
   // Y axis ticks em horas
   const maxH = maxMin / 60
@@ -116,9 +127,9 @@ function BarChart({ data }: { data: DailyFocus[] }) {
         })}
 
         {/* Bars */}
-        {data.map((d, i) => {
+        {rows.map((d, i) => {
           const barH = (d.minutes / maxMin) * chartH
-          const x    = PAD_L + i * (chartW / data.length) + 2
+          const x    = PAD_L + i * (chartW / Math.max(rows.length, 1)) + 2
           const y    = H - PAD_B - barH
           const color = d.mood ? (MOOD_COLOR[d.mood] ?? 'var(--border2)') : 'var(--border2)'
           return (
@@ -184,11 +195,12 @@ function DonutChart({ dist, total }: { dist: Record<string, number>; total: numb
   const [hovQ, setHovQ] = useState<string | null>(null)
   const CX = 90; const CY = 90; const R = 62; const SW = 26
   const quads = ['q1', 'q2', 'q3', 'q4']
-  const sum = quads.reduce((s, q) => s + (dist[q] ?? 0), 0) || 1
+  const dMap = dist ?? {}
+  const sum = quads.reduce((s, q) => s + (dMap[q] ?? 0), 0) || 1
 
   let cursor = 0
   const segments = quads.map(q => {
-    const val   = dist[q] ?? 0
+    const val   = dMap[q] ?? 0
     const deg   = (val / sum) * 360
     const start = cursor
     cursor += deg
@@ -244,11 +256,10 @@ function DonutChart({ dist, total }: { dist: Record<string, number>; total: numb
 
 // ── Bloco 4 — Lista de projetos ────────────────────────────────────────────────
 function ProjectRow({ proj }: { proj: ProjectRoi }) {
-  const pct = (proj.tasks_total ?? 0) > 0
-    ? Math.round(((proj.tasks_done ?? 0) / proj.tasks_total) * 100)
+  const pct = proj.tasks_total > 0
+    ? Math.round((proj.tasks_done / proj.tasks_total) * 100)
     : 0
-  const byQuadrant = proj.tasks_by_quadrant ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
-  const totalQ = Object.values(byQuadrant).reduce((s, v) => s + (v ?? 0), 0) || 1
+  const totalQ = Object.values(proj.tasks_by_quadrant ?? {}).reduce((s, v) => s + v, 0) || 1
 
   return (
     <div className="db-proj-row">
@@ -272,7 +283,7 @@ function ProjectRow({ proj }: { proj: ProjectRoi }) {
       {/* Mini distribuição de quadrantes */}
       <div className="db-proj-quad-row">
         {(['q1', 'q2', 'q3', 'q4'] as const).map(q => {
-          const v = byQuadrant[q] ?? 0
+          const v = (proj.tasks_by_quadrant ?? {})[q] ?? 0
           const w = Math.round((v / totalQ) * 100)
           return w > 0 ? (
             <div
@@ -293,15 +304,16 @@ const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 function Heatmap({ data }: { data: HeatmapDay[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; d: HeatmapDay } | null>(null)
+  const heat = data ?? []
 
   // Organiza em grade: primeiro dia alinhado à coluna da semana correta
   const CELL = 12; const GAP = 2; const STEP = CELL + GAP
-  const firstDay = data[0] ? dayOfWeek(data[0].date) : 0
+  const firstDay = heat[0] ? dayOfWeek(heat[0].date) : 0
 
   // Preenche células vazias no início
   const padded: (HeatmapDay | null)[] = [
     ...Array(firstDay).fill(null),
-    ...data,
+    ...heat,
   ]
   const cols = Math.ceil(padded.length / 7)
 
@@ -310,7 +322,7 @@ function Heatmap({ data }: { data: HeatmapDay[] }) {
 
   // Labels de mês
   const monthLabels: { col: number; label: string }[] = []
-  data.forEach((d, i) => {
+  heat.forEach((d, i) => {
     const idx = i + firstDay
     const col = Math.floor(idx / 7)
     try {
@@ -416,11 +428,11 @@ export function DashboardPage() {
     )
   }
 
-  const summary              = roi.summary              ?? {}
-  const projects             = roi.projects             ?? []
+  const summary: RoiSummaryData = { ...EMPTY_ROI_SUMMARY, ...(roi.summary ?? {}) }
+  const projects = roi.projects ?? []
   const quadrant_distribution = roi.quadrant_distribution ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
-  const daily_focus          = roi.daily_focus          ?? []
-  const totalTasks = Object.values(quadrant_distribution).reduce((s, v) => s + (v ?? 0), 0)
+  const daily_focus = roi.daily_focus ?? []
+  const totalTasks = Object.values(quadrant_distribution).reduce((s, v) => s + v, 0)
 
   return (
     <div className="db-wrapper">
@@ -428,8 +440,8 @@ export function DashboardPage() {
       <div className="db-header">
         <h2 className="db-title">Dashboard ROI</h2>
         <p className="db-subtitle">
-          Produtividade real · {(summary as any).most_active_project
-            ? `Projeto mais ativo: ${(summary as any).most_active_project}`
+          Produtividade real · {summary.most_active_project
+            ? `Projeto mais ativo: ${summary.most_active_project}`
             : 'Nenhum projeto ativo ainda'}
         </p>
       </div>
@@ -438,29 +450,29 @@ export function DashboardPage() {
       <div className="db-kpi-row">
         <KpiCard
           icon="⏱"
-          value={fmtMin((summary as any).total_focus_minutes_week ?? 0)}
+          value={fmtMin(summary.total_focus_minutes_week)}
           label="Foco esta semana"
-          sub={`Total: ${fmtMin((summary as any).total_focus_minutes ?? 0)}`}
+          sub={`Total: ${fmtMin(summary.total_focus_minutes)}`}
         />
         <KpiCard
           icon="✓"
-          value={String((summary as any).tasks_completed_total ?? 0)}
+          value={String(summary.tasks_completed_total)}
           label="Tasks concluídas"
-          sub={`Esta semana: ${(summary as any).tasks_completed_week ?? 0}`}
+          sub={`Esta semana: ${summary.tasks_completed_week}`}
         />
         <KpiCard
           icon="🎯"
-          value={`${(summary as any).focus_score ?? 0}%`}
+          value={`${summary.focus_score}%`}
           label="Score de foco"
           sub="Tempo em Q1+Q2"
-          accent={((summary as any).focus_score ?? 0) >= 60}
+          accent={summary.focus_score >= 60}
         />
         <KpiCard
           icon="🔥"
-          value={String((summary as any).current_streak_days ?? 0)}
+          value={String(summary.current_streak_days)}
           label="Dias consecutivos"
-          sub={((summary as any).current_streak_days ?? 0) > 0 ? 'sequência ativa' : 'inicie hoje!'}
-          accent={((summary as any).current_streak_days ?? 0) >= 3}
+          sub={summary.current_streak_days > 0 ? 'sequência ativa' : 'inicie hoje!'}
+          accent={summary.current_streak_days >= 3}
         />
       </div>
 
@@ -506,7 +518,7 @@ export function DashboardPage() {
           <div className="skeleton skeleton-line" style={{ height: 120 }} />
         ) : (
           <>
-            <Heatmap data={heat} />
+            <Heatmap data={heat ?? []} />
             <div className="db-heat-legend">
               <span className="db-heat-legend-label">menos</span>
               {HEAT_COLORS.map((c, i) => (

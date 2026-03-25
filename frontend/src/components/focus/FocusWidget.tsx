@@ -49,7 +49,8 @@ interface Props {
 
 // ── Widget ────────────────────────────────────────────────────────────────────
 
-export function FocusWidget({ tasks, projectId }: Props) {
+export function FocusWidget({ tasks: tasksProp, projectId }: Props) {
+  const tasks = tasksProp ?? []
   const focus = useFocus()
 
   // Estados de UI locais

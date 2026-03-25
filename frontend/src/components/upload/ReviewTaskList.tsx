@@ -167,21 +167,21 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
           </span>
         )}
         {(task.dependencies?.length ?? 0) > 0 && (
-          <span className="rtl-dep-count">🔗 {task.dependencies!.length} dep.</span>
+          <span className="rtl-dep-count">🔗 {(task.dependencies ?? []).length} dep.</span>
         )}
       </div>
 
       {/* Badges de dependência */}
       {(task.dependencies?.length ?? 0) > 0 && (
         <div className="rtl-dep-badges">
-          {task.dependencies!.map(depId => {
+          {(task.dependencies ?? []).map(depId => {
             const dep = allTasks.find(t => t.id === depId)
             return dep ? (
               <span key={depId} className="rtl-dep-badge">
                 depende de: {dep.title.length > 35 ? dep.title.slice(0, 35) + '…' : dep.title}
                 <button
                   className="rtl-dep-remove"
-                  onClick={() => onUpdate({ dependencies: task.dependencies!.filter(d => d !== depId) })}
+                  onClick={() => onUpdate({ dependencies: (task.dependencies ?? []).filter(d => d !== depId) })}
                 >×</button>
               </span>
             ) : null
@@ -343,9 +343,9 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
             {/* Subtasks sugeridas pelo agente */}
             {(task.suggested_subtasks?.length ?? 0) > 0 && (
               <div className="rtl-suggested">
-                <div className="rtl-field-label">Subtarefas sugeridas ({task.suggested_subtasks!.length})</div>
+                <div className="rtl-field-label">Subtarefas sugeridas ({(task.suggested_subtasks ?? []).length})</div>
                 <ul className="rtl-sub-list">
-                  {task.suggested_subtasks!.map((s, i) => (
+                  {(task.suggested_subtasks ?? []).map((s, i) => (
                     <li key={i} className="rtl-sub-item">
                       <span className="rtl-sub-text">{s}</span>
                       <button
@@ -362,7 +362,7 @@ function ReviewTaskCard({ task, allTasks, onUpdate, onDiscard, onRestore, onSubd
                             is_subtask: true,
                           })])
                           // Remove suggestion from list
-                          onUpdate({ suggested_subtasks: task.suggested_subtasks!.filter((_, j) => j !== i) })
+                          onUpdate({ suggested_subtasks: (task.suggested_subtasks ?? []).filter((_, j) => j !== i) })
                         }}
                       >+ criar card</button>
                     </li>
@@ -488,7 +488,8 @@ interface Props {
   readonlyNote?: string
 }
 
-export function ReviewTaskList({ tasks, onChange, readonlyNote }: Props) {
+export function ReviewTaskList({ tasks: tasksProp, onChange, readonlyNote }: Props) {
+  const tasks = tasksProp ?? []
   const [filter, setFilter] = useState<FilterType>('all')
   const [activeId, setActiveId] = useState<string | null>(null)
 

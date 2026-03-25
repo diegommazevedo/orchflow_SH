@@ -86,7 +86,8 @@ function CommentCard({
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export function TaskComments({ taskId }: Props) {
-  const { comments, isLoading, addComment, deleteComment, isSending } = useComments(taskId)
+  const { comments: commentsRaw, isLoading, addComment, deleteComment, isSending } = useComments(taskId)
+  const comments = commentsRaw ?? []
 
   const [draft, setDraft]           = useState('')
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)

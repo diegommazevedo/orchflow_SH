@@ -72,7 +72,7 @@ const SPRINT_STATUS_COLORS: Record<Sprint['status'], string> = {
 }
 
 export function Sidebar({
-  projects,
+  projects: projectsProp,
   activeProjectId,
   onSelect,
   activeView = 'board',
@@ -86,6 +86,7 @@ export function Sidebar({
   collapsed = false,
   onToggleCollapse,
 }: Props) {
+  const projects = projectsProp ?? []
   const [addingProject, setAddingProject] = useState(false)
   const [projectName, setProjectName]     = useState('')
   const createProject = useCreateProject()
@@ -98,8 +99,9 @@ export function Sidebar({
     })
   }
 
-  const activeSprint = sprints.find(s => s.status === 'active')
-  const otherSprints = sprints.filter(s => s.id !== activeSprint?.id).slice(0, 4)
+  const sprintList = sprints ?? []
+  const activeSprint = sprintList.find(s => s.status === 'active')
+  const otherSprints = sprintList.filter(s => s.id !== activeSprint?.id).slice(0, 4)
 
   return (
     <div className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
