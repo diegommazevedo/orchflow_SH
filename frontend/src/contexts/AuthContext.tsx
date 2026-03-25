@@ -17,6 +17,10 @@ import {
   type ReactNode,
 } from 'react'
 import axios from 'axios'
+import { API_ROOT } from '../services/api'
+
+// Helper: monta URL completa tanto em dev (/api/...) quanto em prod (https://railway.../api/...)
+const _url = (path: string) => API_ROOT ? `${API_ROOT}${path}` : path
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -90,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       _applyToken(saved)
-      const { data } = await axios.get('/api/auth/me')
+      const { data } = await axios.get(_url('/api/auth/me'))
       setToken(saved)
       setUser(data)
     } catch {
@@ -108,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── login ─────────────────────────────────────────────────────────────────
 
   const login = useCallback(async (email: string, password: string) => {
-    const { data } = await axios.post('/api/auth/login', { email, password })
+    const { data } = await axios.post(_url('/api/auth/login'), { email, password })
     _setSession(data.token, data.user)
   }, [_setSession])
 
@@ -120,14 +124,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     nickname?: string,
   ) => {
-    const { data } = await axios.post('/api/auth/register', { name, email, password, nickname })
+    const { data } = await axios.post(_url('/api/auth/register'), { name, email, password, nickname })
     _setSession(data.token, data.user)
   }, [_setSession])
 
   // ── logout ────────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
-    axios.post('/api/auth/logout').catch(() => {})  // fire-and-forget
+    axios.post(_url('/api/auth/logout')).catch(() => {})  // fire-and-forget
     _clearSession()
   }, [_clearSession])
 

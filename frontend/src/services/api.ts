@@ -1,22 +1,26 @@
 /**
- * services/api.ts — Sprint 6B
+ * services/api.ts — Sprint 6B + Deploy
  *
- * Adicionados interceptors:
+ * Em desenvolvimento: Vite proxy redireciona /api → http://127.0.0.1:8010
+ * Em produção (Vercel): VITE_API_URL aponta para o Railway backend.
+ *
+ * VITE_API_URL = "https://orchflow-production.railway.app"
+ * → baseURL = "https://orchflow-production.railway.app/api"
+ *
+ * Interceptors:
  *   - Request: injeta Bearer token do localStorage
  *   - Response: 401 → limpa token + dispara evento de logout
- *
- * Leis respeitadas:
- *   - Token lido de localStorage key 'orchflow-token'
- *   - Senha nunca trafega aqui (apenas token JWT)
- *   - CORS via proxy Vite /api
  */
 import axios from 'axios'
 import type { Project, Task, TaskStatus, EisenhowerQuadrant, ContractParseResult } from '../types'
 
 const TOKEN_KEY = 'orchflow-token'
 
+// Em produção VITE_API_URL é a URL raiz do Railway (sem /api no final)
+export const API_ROOT = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_ROOT ? `${API_ROOT}/api` : '/api',
   headers: { 'Content-Type': 'application/json' },
 })
 
