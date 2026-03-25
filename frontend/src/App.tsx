@@ -12,10 +12,12 @@ import { TimelinePage } from './pages/TimelinePage'
 import { AgentsPage } from './pages/AgentsPage'
 import { SprintPage } from './pages/SprintPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { TrashPage } from './pages/TrashPage'
+import { ErrorToastHost } from './components/ui/ErrorToast'
 import { FocusWidget } from './components/focus/FocusWidget'
 import { LoginPage } from './pages/LoginPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { useProjects, useTasks } from './hooks/useData'
+import { useProjects, useTasks, useTrashTasks } from './hooks/useData'
 import { useTheme } from './hooks/useTheme'
 import { useSprints, getActiveSprint } from './hooks/useSprints'
 import type { Project, Sprint, Task } from './types'
@@ -74,6 +76,7 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
 
   const { data: projectsData, isLoading: loadingProjects } = useProjects()
   const { data: tasksData, isLoading: loadingTasks }     = useTasks(activeProjectId ?? undefined)
+  const { data: trashItems }                             = useTrashTasks(activeProjectId)
   const { data: sprintsData }                              = useSprints(activeProjectId)
 
   const projects = toArr<Project>(projectsData)
@@ -84,6 +87,7 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
   const isLoading           = loadingProjects || loadingTasks
   const activeTaskCount     = tasks.length
   const activeHasInProgress = tasks.some(t => t.status === 'in_progress')
+  const trashCount          = trashItems?.length ?? 0
   // Sprint ativo derivado dos dados — fallback para o sprint selecionado pelo usuário
   const currentSprint       = activeSprint ?? getActiveSprint(sprints)
 
@@ -134,6 +138,11 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
 
       case 'agents':
         return <AgentsPage />
+
+      case 'trash':
+        return (
+          <TrashPage activeProjectId={activeProjectId} projectName={activeProject?.name} />
+        )
 
       case 'sprint':
         return (
@@ -193,6 +202,7 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
 
   return (
     <div className="app">
+      <ErrorToastHost />
       <Topbar
         activeProjectName={activeProject?.name}
         activeView={view}
@@ -211,6 +221,7 @@ function AppShell({ user, onLogout, theme, onThemeToggle }: {
           activeView={view}
           onNavigate={setView}
           activeTaskCount={activeTaskCount}
+          trashCount={trashCount}
           activeHasInProgress={activeHasInProgress}
           isLoading={loadingProjects}
           sprints={sprints}

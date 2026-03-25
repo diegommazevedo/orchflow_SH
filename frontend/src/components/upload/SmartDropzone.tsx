@@ -12,8 +12,8 @@
  * - Callbacks recebem dados parseados, não arquivos brutos
  */
 import { useState, useRef, useCallback, DragEvent, ChangeEvent } from 'react'
-import axios from 'axios'
-import api from '../../services/api'
+import { isAxiosError } from 'axios'
+import { api } from '../../services/api'
 import type { ContractParseResult, SheetParseResult } from '../../types'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -85,9 +85,7 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       // ── 1. Detectar tipo ─────────────────────────────────────────────────
       const fd1 = new FormData()
       fd1.append('file', file)
-      const { data: detect } = await api.post<DetectResult>('/upload/detect', fd1, {
-        headers: { 'Content-Type': undefined },
-      })
+      const { data: detect } = await api.post<DetectResult>('/upload/detect', fd1)
 
       const info = TYPE_INFO[detect.file_type] ?? TYPE_INFO.unknown
       setDetection({
@@ -106,25 +104,19 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       switch (detect.file_type) {
         case 'contract_pdf': {
           fd2.append('file', file)
-          const { data } = await api.post<ContractParseResult>('/upload/contract', fd2, {
-            headers: { 'Content-Type': undefined },
-          })
+          const { data } = await api.post<ContractParseResult>('/upload/contract', fd2)
           onContractResult(data)
           break
         }
         case 'sheet': {
           fd2.append('file', file)
-          const { data } = await api.post<SheetParseResult>('/upload/sheet', fd2, {
-            headers: { 'Content-Type': undefined },
-          })
+          const { data } = await api.post<SheetParseResult>('/upload/sheet', fd2)
           onSheetResult(data)
           break
         }
         case 'audio': {
           fd2.append('audio', file)
-          const { data } = await api.post<{ text: string }>('/voice/transcribe', fd2, {
-            headers: { 'Content-Type': undefined },
-          })
+          const { data } = await api.post<{ text: string }>('/voice/transcribe', fd2)
           onAudioTranscript(data.text)
           break
         }
@@ -148,16 +140,10 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       setPhase('idle')
       setDetection(null)
     } catch (e) {
-      let msg = 'Falha ao processar arquivo.'
-      if (axios.isAxiosError(e)) {
-        const detail = e.response?.data?.detail
-        msg = Array.isArray(detail)
-          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join(', ')
-          : typeof detail === 'string'
-            ? detail
-            : e.message
-      }
-      setErrMsg(msg)
+      const msg = isAxiosError(e)
+        ? (e.response?.data?.detail ?? e.message)
+        : 'Falha ao processar arquivo.'
+      setErrMsg(String(msg))
       setPhase('error')
     }
   }, [onContractResult, onSheetResult, onAudioTranscript])

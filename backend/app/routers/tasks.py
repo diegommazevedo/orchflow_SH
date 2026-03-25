@@ -44,6 +44,22 @@ class TaskResponse(BaseModel):
     project_id: uuid.UUID
     due_date_iso: Optional[str] = None
     assignee_id: Optional[uuid.UUID] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TrashTaskResponse(BaseModel):
+    """Task na lixeira (soft-deleted)."""
+    id: uuid.UUID
+    title: str
+    status: str
+    quadrant: str
+    project_id: uuid.UUID
+    deleted_at: datetime
+    deleted_by: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -89,9 +105,24 @@ def _log(
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+def _active_tasks_query(db: Session):
+    return db.query(Task).filter(Task.deleted_at.is_(None))
+
+
+@router.get("/trash/{project_id}", response_model=list[TrashTaskResponse])
+def list_trash(project_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Tasks soft-deleted do projeto, mais recentes primeiro."""
+    q = (
+        db.query(Task)
+        .filter(Task.project_id == project_id, Task.deleted_at.isnot(None))
+        .order_by(Task.deleted_at.desc())
+    )
+    return q.all()
+
+
 @router.get("/", response_model=list[TaskResponse])
 def list_tasks(project_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db)):
-    q = db.query(Task)
+    q = _active_tasks_query(db)
     if project_id:
         q = q.filter(Task.project_id == project_id)
     return q.all()
@@ -122,7 +153,7 @@ def update_status(
     db: Session = Depends(get_db),
     auth: Optional[dict] = Depends(get_current_user_optional),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = _active_tasks_query(db).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
@@ -140,7 +171,7 @@ def update_status(
 
 @router.patch("/{task_id}/time")
 def add_time(task_id: uuid.UUID, body: TimeUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = _active_tasks_query(db).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
     task.time_spent_minutes += body.minutes
@@ -155,7 +186,7 @@ def update_task(
     db: Session = Depends(get_db),
     auth: Optional[dict] = Depends(get_current_user_optional),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = _active_tasks_query(db).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
@@ -233,8 +264,8 @@ def update_task(
     return task
 
 
-@router.delete("/{task_id}")
-def delete_task(
+@router.post("/{task_id}/restore", response_model=TaskResponse)
+def restore_task(
     task_id: uuid.UUID,
     db: Session = Depends(get_db),
     auth: Optional[dict] = Depends(get_current_user_optional),
@@ -242,10 +273,55 @@ def delete_task(
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+    if task.deleted_at is None:
+        raise HTTPException(status_code=400, detail="Tarefa não está na lixeira")
+
+    task.deleted_at = None
+    task.deleted_by = None
+    user_id = auth["user_id"] if auth else "default"
+    _log(db, task.id, "restored", user_id=user_id, metadata={"title": task.title})
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@router.delete("/{task_id}/permanent")
+def purge_task(
+    task_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: Optional[dict] = Depends(get_current_user_optional),
+):
+    """
+    Remove a task do banco (irreversível). Só permitido se já estiver na lixeira.
+    Risco CRITICAL — wizard obrigatório no frontend.
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+    if task.deleted_at is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Exclua a tarefa primeiro (vai para a lixeira) antes de remover permanentemente.",
+        )
+    db.delete(task)
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{task_id}")
+def delete_task(
+    task_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: Optional[dict] = Depends(get_current_user_optional),
+):
+    task = _active_tasks_query(db).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
     user_id = auth["user_id"] if auth else "default"
     _log(db, task.id, "deleted", user_id=user_id, metadata={"title": task.title})
 
-    db.delete(task)
+    task.deleted_at = datetime.utcnow()
+    task.deleted_by = user_id
     db.commit()
     return {"ok": True}

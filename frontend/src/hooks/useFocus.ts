@@ -11,10 +11,8 @@
  *   - ActivityLog gerado pelo backend no /end
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
-import axios from 'axios'
+import { api } from '../services/api'
 import type { FocusMood, FocusConfig } from '../types'
-
-const API = 'http://localhost:8010'
 const LS_KEY = 'orchflow-focus-session'
 
 const EMPTY_CONFIG: FocusConfig = {
@@ -105,7 +103,7 @@ export function useFocus() {
     if (taskId)        body.task_id   = taskId
     if (opts.sprintId) body.sprint_id = opts.sprintId
 
-    const res = await axios.post(`${API}/api/focus/start`, body)
+    const res = await api.post('/focus/start', body)
     const { session_id, started_at } = res.data
 
     // Usa started_at do banco como referência absoluta
@@ -156,7 +154,7 @@ export function useFocus() {
     if (mood)  body.mood  = mood
     if (notes) body.notes = notes  // conformado no backend (modo silent)
 
-    const res = await axios.post(`${API}/api/focus/${config.sessionId}/end`, body)
+    const res = await api.post(`/focus/${config.sessionId}/end`, body)
     clearConfig()
     setConfigState({ ...EMPTY_CONFIG })
     return res.data as { duration_minutes: number; ended_at: string }
@@ -193,7 +191,7 @@ export function useFocus() {
 // ── Fetch de histórico / produtividade ────────────────────────────────────────
 
 export async function fetchProductivity(userId = 'default') {
-  const res = await axios.get(`${API}/api/focus/productivity/${userId}`)
+  const res = await api.get(`/focus/productivity/${userId}`)
   return res.data as {
     snapshots: import('../types').ProductivitySnapshot[]
     log_md: string

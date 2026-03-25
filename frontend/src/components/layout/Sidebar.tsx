@@ -15,7 +15,17 @@ import type { Project, Sprint } from '../../types'
 import { useCreateProject } from '../../hooks/useData'
 import { toArr } from '../../utils/array'
 
-export type AppView = 'board' | 'matrix' | 'list' | 'timeline' | 'agents' | 'roi' | 'import' | 'sprint' | 'dashboard'
+export type AppView =
+  | 'board'
+  | 'matrix'
+  | 'list'
+  | 'timeline'
+  | 'agents'
+  | 'roi'
+  | 'import'
+  | 'sprint'
+  | 'dashboard'
+  | 'trash'
 
 interface Props {
   projects: Project[]
@@ -25,6 +35,8 @@ interface Props {
   onNavigate?: (view: AppView) => void
   /** Total de tasks do projeto ativo */
   activeTaskCount?: number
+  /** Itens na lixeira do projeto ativo */
+  trashCount?: number
   /** Se o projeto ativo tem tasks em andamento */
   activeHasInProgress?: boolean
   /** Projetos carregando */
@@ -79,6 +91,7 @@ export function Sidebar({
   activeView = 'board',
   onNavigate,
   activeTaskCount,
+  trashCount,
   activeHasInProgress,
   isLoading,
   sprints = [],
@@ -137,6 +150,23 @@ export function Sidebar({
             <span className="nav-label">{label}</span>
           </div>
         ))}
+
+        <div
+          className={`nav-item nav-item-trash${activeView === 'trash' ? ' active' : ''}`}
+          onClick={() => onNavigate?.('trash')}
+          role="button"
+          tabIndex={0}
+          title="Lixeira"
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') onNavigate?.('trash')
+          }}
+        >
+          <span className="nav-icon">🗑</span>
+          <span className="nav-label">Lixeira</span>
+          {typeof trashCount === 'number' && trashCount > 0 && (
+            <span className="sidebar-trash-badge">{trashCount > 99 ? '99+' : trashCount}</span>
+          )}
+        </div>
       </div>
 
       {/* ── Projetos ─────────────────────────────────────────────── */}

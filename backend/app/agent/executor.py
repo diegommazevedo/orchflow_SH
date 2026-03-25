@@ -3,11 +3,14 @@ agent/executor.py — Sprint 3 completo
 Toda inserção/edição passa pela ConformityEngine antes de tocar o banco.
 """
 
+from datetime import datetime
+
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.models.task import Task, TaskStatus, EisenhowerQuadrant
 from app.models.project import Project
 from app.models.user import User
+from app.models.activity import ActivityLog
 from app.agent.intent_engine import IntentResult
 from app.agent.conformity import conform_task_payload
 import uuid
@@ -106,13 +109,25 @@ def execute_intent(intent: IntentResult, project_id: str, db: Session) -> dict:
         if not task:
             return {"success": False, "message": f'Tarefa "{hint}" não encontrada.'}
         title = task.title
-        db.delete(task)
+        task.deleted_at = datetime.utcnow()
+        task.deleted_by = "default"
+        db.add(ActivityLog(
+            entity_type="task",
+            entity_id=task.id,
+            user_id="default",
+            action="deleted",
+            extra_data={"title": title},
+        ))
         db.commit()
-        return {"success": True, "message": f'✓ Tarefa "{title}" removida.'}
+        return {"success": True, "message": f'✓ Tarefa "{title}" movida para a lixeira.'}
 
     # ── LIST TASKS ────────────────────────────────────────
     if action == "list_tasks":
-        tasks = db.query(Task).filter(Task.project_id == uuid.UUID(project_id)).all()
+        tasks = (
+            db.query(Task)
+            .filter(Task.project_id == uuid.UUID(project_id), Task.deleted_at.is_(None))
+            .all()
+        )
         if not tasks:
             return {"success": True, "message": "Nenhuma tarefa neste projeto."}
         icons = {"backlog": "📋", "in_progress": "🔄", "done": "✓"}
@@ -147,10 +162,15 @@ def execute_intent(intent: IntentResult, project_id: str, db: Session) -> dict:
 def _find_task(hint: str, project_id: str, db: Session) -> Task | None:
     if not hint:
         return None
-    return db.query(Task).filter(
-        Task.project_id == uuid.UUID(project_id),
-        Task.title.ilike(f"%{hint}%")
-    ).first()
+    return (
+        db.query(Task)
+        .filter(
+            Task.project_id == uuid.UUID(project_id),
+            Task.title.ilike(f"%{hint}%"),
+            Task.deleted_at.is_(None),
+        )
+        .first()
+    )
 
 
 def _get_project_name(project_id: str, db: Session) -> str | None:

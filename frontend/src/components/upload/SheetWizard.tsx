@@ -13,7 +13,8 @@
  * - defaults propagados ao backend para células vazias
  */
 import { useState } from 'react'
-import axios from 'axios'
+import { isAxiosError } from 'axios'
+import { api } from '../../services/api'
 import type { SheetParseResult, SheetMapping, SheetTask, ReviewTask } from '../../types'
 import type { FieldType } from '../../hooks/useDebouncedConform'
 import { ReviewTaskList } from './ReviewTaskList'
@@ -91,10 +92,10 @@ function InlineCreateProject({ onCreated, onCancel }: InlineCreateProps) {
     setCreating(true)
     setErr(null)
     try {
-      const { data } = await axios.post<{ id: string; name: string }>('/api/projects/', { name })
+      const { data } = await api.post<{ id: string; name: string }>('/projects/', { name })
       onCreated({ id: data.id, name: data.name })
     } catch (e) {
-      setErr(axios.isAxiosError(e) ? (e.response?.data?.detail ?? 'Erro ao criar projeto') : 'Erro ao criar projeto')
+      setErr(isAxiosError(e) ? (e.response?.data?.detail ?? 'Erro ao criar projeto') : 'Erro ao criar projeto')
     } finally {
       setCreating(false)
     }

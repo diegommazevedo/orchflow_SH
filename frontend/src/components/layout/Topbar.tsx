@@ -23,6 +23,7 @@ const VIEW_LABELS: Record<AppView, string> = {
   roi:       'ROI',
   import:    'Import',
   dashboard: 'Tempo & ROI',
+  trash:     'Lixeira',
 }
 
 /** Gera iniciais a partir do nome (até 2 letras) */

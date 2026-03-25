@@ -11,14 +11,14 @@
  * - CORS mantido via proxy Vite / main.py
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import { api } from '../services/api'
 import type { Sprint, SprintBoard, Task } from '../types'
 import { toArr } from '../utils/array'
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
 async function fetchSprints(projectId: string): Promise<Sprint[]> {
-  const { data } = await axios.get<Sprint[]>(`/api/sprints/project/${projectId}`)
+  const { data } = await api.get<Sprint[]>(`/sprints/project/${projectId}`)
   return data
 }
 
@@ -29,7 +29,7 @@ async function createSprint(payload: {
   start_date?: string
   end_date?: string
 }): Promise<Sprint> {
-  const { data } = await axios.post<Sprint>('/api/sprints/', payload)
+  const { data } = await api.post<Sprint>('/sprints/', payload)
   return data
 }
 
@@ -37,34 +37,34 @@ async function updateSprint(
   id: string,
   payload: Partial<Pick<Sprint, 'name' | 'goal' | 'start_date' | 'end_date' | 'status'>>,
 ): Promise<Sprint> {
-  const { data } = await axios.patch<Sprint>(`/api/sprints/${id}`, payload)
+  const { data } = await api.patch<Sprint>(`/sprints/${id}`, payload)
   return data
 }
 
 async function deleteSprint(id: string): Promise<void> {
-  await axios.delete(`/api/sprints/${id}`)
+  await api.delete(`/sprints/${id}`)
 }
 
 async function startSprint(id: string): Promise<Sprint> {
-  const { data } = await axios.post<Sprint>(`/api/sprints/${id}/start`)
+  const { data } = await api.post<Sprint>(`/sprints/${id}/start`)
   return data
 }
 
 async function completeSprint(id: string): Promise<Sprint> {
-  const { data } = await axios.post<Sprint>(`/api/sprints/${id}/complete`)
+  const { data } = await api.post<Sprint>(`/sprints/${id}/complete`)
   return data
 }
 
 async function addTaskToSprint(sprintId: string, taskId: string): Promise<void> {
-  await axios.post(`/api/sprints/${sprintId}/tasks`, { task_id: taskId })
+  await api.post(`/sprints/${sprintId}/tasks`, { task_id: taskId })
 }
 
 async function removeTaskFromSprint(sprintId: string, taskId: string): Promise<void> {
-  await axios.delete(`/api/sprints/${sprintId}/tasks/${taskId}`)
+  await api.delete(`/sprints/${sprintId}/tasks/${taskId}`)
 }
 
 async function fetchSprintBoard(sprintId: string): Promise<SprintBoard> {
-  const { data } = await axios.get<SprintBoard>(`/api/sprints/${sprintId}/board`)
+  const { data } = await api.get<SprintBoard>(`/sprints/${sprintId}/board`)
   // O backend retorna tasks como dicts — garantir tipo correto
   return data as SprintBoard
 }

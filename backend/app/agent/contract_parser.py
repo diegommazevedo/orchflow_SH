@@ -43,47 +43,7 @@ Regras:
 
 
 def _get_client() -> Groq:
-    key = os.getenv("GROQ_API_KEY")
-    if not key or not key.strip():
-        raise ValueError("GROQ_API_KEY não configurada no servidor.")
-    return Groq(api_key=key)
-
-
-def _extract_json_object(s: str) -> dict:
-    """Parse JSON do modelo: tolera markdown, texto antes/depois e respostas truncadas."""
-    s = (s or "").strip()
-    if not s:
-        raise ValueError(
-            "Resposta do modelo vazia. Confirme GROQ_API_KEY no Railway e cota da API Groq."
-        )
-    s = re.sub(r"^```(?:json)?\s*", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"\s*```\s*$", "", s).strip()
-    s = re.sub(r"```json|```", "", s).strip()
-
-    try:
-        data = json.loads(s)
-        if isinstance(data, dict):
-            return data
-    except json.JSONDecodeError:
-        pass
-
-    start = s.find("{")
-    end = s.rfind("}")
-    if start != -1 and end > start:
-        try:
-            data = json.loads(s[start : end + 1])
-            if isinstance(data, dict):
-                return data
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"JSON inválido na resposta do modelo (trecho extraído). "
-                f"Tente outro PDF ou reduza o tamanho. Detalhe: {e}"
-            ) from e
-
-    raise ValueError(
-        "Não foi possível extrair JSON da resposta do modelo. "
-        "O contrato pode ser muito longo ou o modelo retornou só texto."
-    )
+    return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def parse_contract(text: str) -> dict:
@@ -103,9 +63,9 @@ def parse_contract(text: str) -> dict:
         temperature=0.15,
         max_tokens=4096,
     )
-    choice = resp.choices[0].message
-    raw = (choice.content or "").strip()
-    data = _extract_json_object(raw)
+    raw = resp.choices[0].message.content.strip()
+    raw = re.sub(r"```json|```", "", raw).strip()
+    data = json.loads(raw)
 
     if "project" not in data or "tasks" not in data:
         raise ValueError("Resposta do modelo sem project/tasks.")

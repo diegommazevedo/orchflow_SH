@@ -335,12 +335,6 @@ def confirm_sheet(body: SheetConfirmBody, db: Session = Depends(get_db)):
 
 # ══ Detecção de tipo de arquivo (zero processamento, zero banco) ══════════════
 
-@router.options("/detect")
-async def detect_options():
-    """Preflight CORS para POST /detect."""
-    return {}
-
-
 @router.post("/detect")
 async def detect_file(file: UploadFile = File(...)):
     """

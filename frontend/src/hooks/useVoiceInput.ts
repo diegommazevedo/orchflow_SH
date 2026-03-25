@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import api from '../services/api'
+import { api } from '../services/api'
 
 type VoiceState = 'idle' | 'recording' | 'transcribing' | 'done' | 'error'
 
@@ -82,7 +82,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
 
         try {
           const { data } = await api.post('/voice/transcribe', formData, {
-            headers: { 'Content-Type': undefined },
+            headers: { 'Content-Type': 'multipart/form-data' },
           })
           setTranscript(data.text)
           setState('done')

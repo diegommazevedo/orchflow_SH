@@ -130,6 +130,21 @@
 
 ---
 
+## [CP-016] V1.5.0 — fixes export + lixeira + erros UX
+**Data:** 2026-03
+
+**Entregue:**
+- Exportação PDF/Excel: encoding seguro + colunas; tasks deletadas excluídas dos exports; `ExportMenu` com Bearer no fetch.
+- Soft delete: `deleted_at` / `deleted_by`; restore; purge permanente só na lixeira; endpoints trash/restore/permanent.
+- Frontend: `TrashPage`, item Lixeira na sidebar com badge, `ErrorToastHost` + mapa HTTP amigável no client `api` e fallbacks de rede.
+- Activity: ação `restored` no feed.
+
+**Pendente (fora deste CP):** branch `v1-fixes` → merge `main` → tag `v1.5.0`; V2 (`v2-dev`) conforme spec do arquiteto.
+
+**Versão API backend:** 1.5.0 (conforme `main.py` na época do merge).
+
+---
+
 ## [PRÓXIMO]
 Sprint 4 — Dashboard ROI
 ou

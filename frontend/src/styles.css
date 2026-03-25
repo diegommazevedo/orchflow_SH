@@ -217,6 +217,7 @@ body {
 .sidebar.sidebar-collapsed .nav-label,
 .sidebar.sidebar-collapsed .project-item-name,
 .sidebar.sidebar-collapsed .project-task-count,
+.sidebar.sidebar-collapsed .sidebar-trash-badge,
 .sidebar.sidebar-collapsed .project-inprogress-dot,
 .sidebar.sidebar-collapsed .sidebar-footer,
 .sidebar.sidebar-collapsed .project-add,
@@ -5829,3 +5830,99 @@ body {
   .lp-tab,
   .avatar-dropdown { transition: none !important; animation: none !important; }
 }
+
+/* ── V1.5: toasts de erro HTTP + lixeira ───────────────────────────────────── */
+.error-toast-stack {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.error-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f43f5e15;
+  border: 1px solid #f43f5e40;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+}
+.error-toast-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1.2;
+}
+.error-toast-text { flex: 1; min-width: 0; }
+
+.nav-item-trash { position: relative; }
+.sidebar-trash-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--amber);
+  background: rgba(245, 158, 11, 0.12);
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.trash-page { padding-bottom: 24px; }
+.trash-empty { margin-top: 48px; }
+.trash-skeleton-wrap { padding: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.trash-skeleton-row { height: 56px; border-radius: 10px; }
+.trash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.trash-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.trash-row-title { font-weight: 600; color: var(--text); font-size: 14px; }
+.trash-row-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.trash-row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trash-purge-trigger { color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+
+.trash-purge-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.trash-purge-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+.trash-purge-title { font-size: 16px; margin-bottom: 10px; color: var(--text); }
+.trash-purge-text { font-size: 13px; color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
+.trash-purge-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }

@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react'
-import axios from 'axios'
+import { isAxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { uploadContractPdf, confirmContractImport } from '../services/api'
 import type { ContractParseResult } from '../types'
 
 function detailMessage(err: unknown): string {
-  if (axios.isAxiosError(err)) {
+  if (isAxiosError(err)) {
     const d = err.response?.data
     if (d && typeof d === 'object' && 'detail' in d) {
       const det = (d as { detail: unknown }).detail

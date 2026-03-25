@@ -91,7 +91,7 @@ def get_roi(user_id: str, db: Session = Depends(get_db)):
     streak = _consecutive_streak(session_dates)
 
     # ── 3. Tasks ──────────────────────────────────────────────────────────────
-    all_tasks: list[Task] = db.query(Task).all()
+    all_tasks: list[Task] = db.query(Task).filter(Task.deleted_at.is_(None)).all()
 
     tasks_completed_total = sum(1 for t in all_tasks if t.status == TaskStatus.done)
     tasks_completed_week  = sum(

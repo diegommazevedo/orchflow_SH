@@ -1,9 +1,9 @@
-import axios from 'axios'
+import { api } from './api'
 import type { RoiSummary, RoiTimeline } from '../types'
 
 export const getRoiSummary = async (projectId?: string | null): Promise<RoiSummary> => {
   const params = projectId ? { project_id: projectId } : {}
-  const { data } = await axios.get<RoiSummary>('/api/roi/summary', { params })
+  const { data } = await api.get<RoiSummary>('/roi/summary', { params })
   return data
 }
 
@@ -13,6 +13,6 @@ export const getRoiTimeline = async (
 ): Promise<RoiTimeline> => {
   const params: Record<string, unknown> = { days }
   if (projectId) params.project_id = projectId
-  const { data } = await axios.get<RoiTimeline>('/api/roi/timeline', { params })
+  const { data } = await api.get<RoiTimeline>('/roi/timeline', { params })
   return data
 }

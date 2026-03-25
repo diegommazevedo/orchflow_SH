@@ -81,7 +81,7 @@ def roi_summary(
     Agrega métricas ROI.
     project_id = None → visão global (todos os projetos).
     """
-    q = db.query(Task)
+    q = db.query(Task).filter(Task.deleted_at.is_(None))
     if project_id:
         q = q.filter(Task.project_id == project_id)
     tasks = q.all()
@@ -203,7 +203,7 @@ def roi_timeline(
     today = date.today()
     start = today - timedelta(days=days - 1)
 
-    q = db.query(Task)
+    q = db.query(Task).filter(Task.deleted_at.is_(None))
     if project_id:
         q = q.filter(Task.project_id == project_id)
     tasks = q.all()

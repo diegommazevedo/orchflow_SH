@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,10 +20,9 @@ from app.routers.focus import router as focus_router
 from app.routers.analytics import router as analytics_router
 from app.routers.auth import router as auth_router
 
-app = FastAPI(title="OrchFlow API", version="1.4.0")
+app = FastAPI(title="OrchFlow API", version="1.5.0")
 
-import os as _os
-
+# CORS: origens locais sempre permitidas + ALLOWED_ORIGINS env var (produção)
 _DEFAULT_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -33,9 +33,9 @@ _DEFAULT_ORIGINS = [
     "https://orchflow-sh-git-main-diegommazevedos-projects.vercel.app",
     "https://orchflow-olr0iao3c-diegommazevedos-projects.vercel.app",
 ]
-_extra = _os.getenv("ALLOWED_ORIGINS", "")
+_extra = os.getenv("ALLOWED_ORIGINS", "")
 _extra_list = [o.strip() for o in _extra.split(",") if o.strip()]
-_all_origins = list(dict.fromkeys(_DEFAULT_ORIGINS + _extra_list))
+_all_origins = list(dict.fromkeys(_DEFAULT_ORIGINS + _extra_list))  # dedup mantendo ordem
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +60,19 @@ def on_startup():
             conn.commit()
     except Exception:
         pass  # enum já pode conter o valor ou não usar pg native enum
+    # V1.5 — colunas soft delete em tasks
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP"
+            ))
+            conn.execute(text(
+                "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_by VARCHAR"
+            ))
+            conn.commit()
+    except Exception:
+        pass
 
 
 app.include_router(projects.router,      prefix="/api/projects",  tags=["projects"])

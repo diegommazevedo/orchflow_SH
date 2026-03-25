@@ -25,7 +25,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.project import Project
-from app.models.task import Task, EisenhowerQuadrant as EQ
+from app.models.task import Task
+from sqlalchemy import and_
 
 router = APIRouter()
 
@@ -65,7 +66,28 @@ def _get_project(project_id: str, db: Session) -> Project:
 
 def _get_tasks(project_id: str, db: Session) -> list[Task]:
     pid = _parse_project_id(project_id)
-    return db.query(Task).filter(Task.project_id == pid).order_by(Task.quadrant, Task.created_at).all()
+    return (
+        db.query(Task)
+        .filter(and_(Task.project_id == pid, Task.deleted_at.is_(None)))
+        .order_by(Task.quadrant, Task.created_at)
+        .all()
+    )
+
+
+def _pdf_safe(s: str | None) -> str:
+    """ReportLab PDF built-in fonts: subset Latin-1; evita corrupção com Unicode."""
+    if s is None:
+        return ""
+    try:
+        return str(s).encode("latin-1", "replace").decode("latin-1")
+    except Exception:
+        return ""
+
+
+def _pdf_para(s: str | None) -> str:
+    """Texto seguro para reportlab.platypus.Paragraph (XML + Latin-1)."""
+    from xml.sax.saxutils import escape
+    return escape(_pdf_safe(s))
 
 def _time_label(mins: int) -> str:
     h, m = divmod(mins, 60)
@@ -125,18 +147,18 @@ def _build_backlog_xlsx(project: Project, tasks: list[Task]) -> io.BytesIO:
         cell.border = thin_border
     ws.row_dimensions[3].height = 20
 
-    # ── Dados ──────────────────────────────────────────────────────────────────
+    # ── Dados (tipos explícitos: str / int / date string) ─────────────────────
     for row_i, task in enumerate(tasks, start=4):
         q_hex = Q_COLORS_HEX.get(str(task.quadrant).replace("EisenhowerQuadrant.", ""), "9C9CB8")
         row_bg = LIGHT_BG if row_i % 2 == 0 else WHITE
-        values = [
-            task.title,
-            Q_LABELS.get(str(task.quadrant), str(task.quadrant)),
-            STATUS_LABELS.get(str(task.status), str(task.status)),
-            "",  # assignee_hint não é armazenado diretamente
-            task.due_date_iso or "",
-            task.time_spent_minutes,
-            task.description or "",
+        values: list[str | int] = [
+            str(task.title or ""),
+            str(Q_LABELS.get(str(task.quadrant), str(task.quadrant))),
+            str(STATUS_LABELS.get(str(task.status), str(task.status))),
+            "",
+            str(task.due_date_iso or ""),
+            int(task.time_spent_minutes or 0),
+            str(task.description or ""),
         ]
         for col_i, val in enumerate(values, start=1):
             cell = ws.cell(row=row_i, column=col_i, value=val)
@@ -144,24 +166,27 @@ def _build_backlog_xlsx(project: Project, tasks: list[Task]) -> io.BytesIO:
             cell.border = thin_border
             cell.alignment = Alignment(vertical="center", wrap_text=(col_i == 7))
             cell.fill = PatternFill("solid", fgColor=row_bg)
-            # Coluna Quadrante: colorir com cor do quadrante
             if col_i == 2:
                 cell.font = Font(name="Calibri", size=10, bold=True, color=q_hex)
-
-    # ── Larguras ───────────────────────────────────────────────────────────────
-    col_widths = [48, 28, 18, 18, 14, 14, 40]
-    for i, w in enumerate(col_widths, start=1):
-        ws.column_dimensions[get_column_letter(i)].width = w
 
     # ── Linha de totais ────────────────────────────────────────────────────────
     total_row = len(tasks) + 4
     total_time = sum(t.time_spent_minutes for t in tasks)
     ws.cell(row=total_row, column=1, value="TOTAL").font = Font(bold=True, color=WHITE)
     ws.cell(row=total_row, column=1).fill = PatternFill("solid", fgColor=ACCENT)
-    ws.cell(row=total_row, column=6, value=total_time).font = Font(bold=True, color=WHITE)
+    ws.cell(row=total_row, column=6, value=int(total_time)).font = Font(bold=True, color=WHITE)
     ws.cell(row=total_row, column=6).fill = PatternFill("solid", fgColor=ACCENT)
     for c in range(1, 8):
         ws.cell(row=total_row, column=c).border = thin_border
+
+    # ── Larguras automáticas (inclui linha TOTAL) ──────────────────────────────
+    for col_i in range(1, 8):
+        max_w = len(headers[col_i - 1]) if col_i <= len(headers) else 8
+        for row_i in range(1, total_row + 1):
+            v = ws.cell(row=row_i, column=col_i).value
+            if v is not None:
+                max_w = max(max_w, len(str(v)))
+        ws.column_dimensions[get_column_letter(col_i)].width = min(max_w + 2, 56)
 
     ws.freeze_panes = "A4"
 
@@ -211,13 +236,13 @@ def _build_time_xlsx(project: Project, tasks: list[Task]) -> io.BytesIO:
     for r, task in enumerate(tasks, start=3):
         pct = round(task.time_spent_minutes / total_time * 100, 1)
         bg = LIGHT if r % 2 == 0 else WHITE
-        row_vals = [
-            task.title,
-            Q_LABELS.get(str(task.quadrant), str(task.quadrant)),
-            STATUS_LABELS.get(str(task.status), str(task.status)),
-            task.time_spent_minutes,
-            _time_label(task.time_spent_minutes),
-            pct,
+        row_vals: list[str | int | float] = [
+            str(task.title or ""),
+            str(Q_LABELS.get(str(task.quadrant), str(task.quadrant))),
+            str(STATUS_LABELS.get(str(task.status), str(task.status))),
+            int(task.time_spent_minutes or 0),
+            str(_time_label(task.time_spent_minutes)),
+            pct / 100,
         ]
         for c, v in enumerate(row_vals, start=1):
             cell = ws.cell(row=r, column=c, value=v)
@@ -225,17 +250,17 @@ def _build_time_xlsx(project: Project, tasks: list[Task]) -> io.BytesIO:
             cell.fill   = PatternFill("solid", fgColor=bg)
             cell.border = thin
             cell.alignment = Alignment(vertical="center")
-            if c == 6:  # %
+            if c == 6:
                 cell.number_format = "0.0%"
-                cell.value = pct / 100
 
     # Total
     tr = len(tasks) + 3
+    tot_m = int(sum(t.time_spent_minutes for t in tasks))
     ws.cell(row=tr, column=1, value="TOTAL").font = Font(bold=True, color=WHITE)
     ws.cell(row=tr, column=1).fill = PatternFill("solid", fgColor=ACCENT)
-    ws.cell(row=tr, column=4, value=sum(t.time_spent_minutes for t in tasks)).font = Font(bold=True, color=WHITE)
+    ws.cell(row=tr, column=4, value=tot_m).font = Font(bold=True, color=WHITE)
     ws.cell(row=tr, column=4).fill = PatternFill("solid", fgColor=ACCENT)
-    ws.cell(row=tr, column=5, value=_time_label(sum(t.time_spent_minutes for t in tasks))).font = Font(bold=True, color=WHITE)
+    ws.cell(row=tr, column=5, value=str(_time_label(tot_m))).font = Font(bold=True, color=WHITE)
     ws.cell(row=tr, column=5).fill = PatternFill("solid", fgColor=ACCENT)
     ws.cell(row=tr, column=6, value=1.0).font = Font(bold=True, color=WHITE)
     ws.cell(row=tr, column=6).fill = PatternFill("solid", fgColor=ACCENT)
@@ -243,8 +268,13 @@ def _build_time_xlsx(project: Project, tasks: list[Task]) -> io.BytesIO:
     for c in range(1, 7):
         ws.cell(row=tr, column=c).border = thin
 
-    for i, w in enumerate([48, 28, 18, 14, 12, 12], start=1):
-        ws.column_dimensions[get_column_letter(i)].width = w
+    for col_i in range(1, 7):
+        max_w = 8
+        for row_i in range(1, tr + 1):
+            v = ws.cell(row=row_i, column=col_i).value
+            if v is not None:
+                max_w = max(max_w, len(str(v)))
+        ws.column_dimensions[get_column_letter(col_i)].width = min(max_w + 2, 52)
     ws.freeze_panes = "A3"
 
     buf = io.BytesIO()
@@ -298,8 +328,8 @@ def _build_backlog_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
 
     # ── Cabeçalho ──────────────────────────────────────────────────────────────
     header_data = [[
-        Paragraph(f"Backlog — {project.name}", styles["title"]),
-        Paragraph(f"Gerado em {date.today().strftime('%d/%m/%Y')}", styles["sub"]),
+        Paragraph(_pdf_para(f"Backlog — {project.name}"), styles["title"]),
+        Paragraph(_pdf_para(f"Gerado em {date.today().strftime('%d/%m/%Y')}"), styles["sub"]),
     ]]
     header_table = Table(header_data, colWidths=["70%", "30%"])
     header_table.setStyle(TableStyle([
@@ -317,10 +347,10 @@ def _build_backlog_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
     total_time = sum(t.time_spent_minutes for t in tasks)
     done_count = sum(1 for t in tasks if str(t.status) in ("done", "TaskStatus.done"))
     summary_data = [[
-        f"{len(tasks)} tasks",
-        f"{done_count} concluídas",
-        f"{len(tasks) - done_count} pendentes",
-        f"Tempo total: {_time_label(total_time)}",
+        _pdf_safe(f"{len(tasks)} tasks"),
+        _pdf_safe(f"{done_count} concluídas"),
+        _pdf_safe(f"{len(tasks) - done_count} pendentes"),
+        _pdf_safe(f"Tempo total: {_time_label(total_time)}"),
     ]]
     summary_table = Table(summary_data, colWidths=["25%","25%","25%","25%"])
     summary_table.setStyle(TableStyle([
@@ -350,19 +380,19 @@ def _build_backlog_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
         q_color = _hex_color(q_hex)
 
         # Título do quadrante
-        story.append(Paragraph(Q_LABELS[q], ParagraphStyle(
+        story.append(Paragraph(_pdf_para(Q_LABELS[q]), ParagraphStyle(
             "qh", fontSize=10, fontName="Helvetica-Bold",
             textColor=q_color, spaceBefore=8, spaceAfter=3,
         )))
 
-        data = [col_hdrs]
+        data = [[_pdf_safe(h) for h in col_hdrs]]
         for task in q_tasks:
             data.append([
-                Paragraph(task.title, styles["cell"]),
-                Q_LABELS[q].split(" — ")[0],
-                STATUS_LABELS.get(str(task.status).replace("TaskStatus.", ""), str(task.status)),
-                task.due_date_iso or "—",
-                _time_label(task.time_spent_minutes),
+                Paragraph(_pdf_para(task.title), styles["cell"]),
+                _pdf_safe(Q_LABELS[q].split(" — ")[0]),
+                _pdf_safe(STATUS_LABELS.get(str(task.status).replace("TaskStatus.", ""), str(task.status))),
+                _pdf_safe(task.due_date_iso or "—"),
+                _pdf_safe(_time_label(task.time_spent_minutes)),
             ])
 
         tbl = Table(data, colWidths=col_w, repeatRows=1)
@@ -396,7 +426,9 @@ def _build_backlog_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
     story.append(HRFlowable(width="100%", color=_hex_color("DDDDEE"), thickness=0.5))
     story.append(Spacer(1, 4))
     story.append(Paragraph(
-        f"OrchFlow — {project.name} · {len(tasks)} tasks · Tempo total: {_time_label(total_time)} · {date.today().strftime('%d/%m/%Y')}",
+        _pdf_para(
+            f"OrchFlow — {project.name} · {len(tasks)} tasks · Tempo total: {_time_label(total_time)} · {date.today().strftime('%d/%m/%Y')}"
+        ),
         styles["footer"],
     ))
 
@@ -442,11 +474,13 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
 
     # Cabeçalho
     h_data = [[
-        Paragraph(project.name, ParagraphStyle("n", fontSize=20, fontName="Helvetica-Bold",
-                                               textColor=WHITE, leading=24)),
-        Paragraph(f"Resumo do Projeto<br/>{date.today().strftime('%d/%m/%Y')}",
-                  ParagraphStyle("d", fontSize=9, fontName="Helvetica",
-                                 textColor=_hex_color("CCCCEE"), leading=13, alignment=2)),
+        Paragraph(_pdf_para(project.name), ParagraphStyle("n", fontSize=20, fontName="Helvetica-Bold",
+                                                          textColor=WHITE, leading=24)),
+        Paragraph(
+            _pdf_para(f"Resumo do Projeto<br/>{date.today().strftime('%d/%m/%Y')}"),
+            ParagraphStyle("d", fontSize=9, fontName="Helvetica",
+                           textColor=_hex_color("CCCCEE"), leading=13, alignment=2),
+        ),
     ]]
     ht = Table(h_data, colWidths=["65%","35%"])
     ht.setStyle(TableStyle([
@@ -463,9 +497,9 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
     # Metadados do projeto
     if client or start or end:
         meta_rows = []
-        if client:  meta_rows.append(["Cliente", client])
-        if start:   meta_rows.append(["Início", start])
-        if end:     meta_rows.append(["Fim", end])
+        if client:  meta_rows.append([_pdf_safe("Cliente"), _pdf_safe(str(client))])
+        if start:   meta_rows.append([_pdf_safe("Início"), _pdf_safe(str(start))])
+        if end:     meta_rows.append([_pdf_safe("Fim"), _pdf_safe(str(end))])
         mt = Table(meta_rows, colWidths=[3*cm, 10*cm])
         mt.setStyle(TableStyle([
             ("FONTSIZE",  (0,0),(-1,-1), 9),
@@ -479,18 +513,20 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
         story.append(Spacer(1, 8))
 
     if summary and len(summary) < 500:
-        story.append(Paragraph(summary, ParagraphStyle("desc", fontSize=9,
-                                                        fontName="Helvetica",
-                                                        textColor=MUTED, leading=13)))
+        story.append(Paragraph(_pdf_para(summary), ParagraphStyle("desc", fontSize=9,
+                                                                   fontName="Helvetica",
+                                                                   textColor=MUTED, leading=13)))
         story.append(Spacer(1, 10))
 
     # Progresso
-    story.append(Paragraph("Progresso",
+    story.append(Paragraph(_pdf_para("Progresso"),
                             ParagraphStyle("sh", fontSize=11, fontName="Helvetica-Bold",
                                            textColor=DARK, spaceBefore=4, spaceAfter=6)))
 
-    prog_data = [["Tasks totais", "Concluídas", "Pendentes", "Progresso"]]
-    prog_data.append([str(total), str(done), str(total - done), f"{pct_done}%"])
+    prog_data = [[_pdf_safe("Tasks totais"), _pdf_safe("Concluídas"),
+                  _pdf_safe("Pendentes"), _pdf_safe("Progresso")]]
+    prog_data.append([_pdf_safe(str(total)), _pdf_safe(str(done)),
+                      _pdf_safe(str(total - done)), _pdf_safe(f"{pct_done}%")])
     pt = Table(prog_data, colWidths=["25%","25%","25%","25%"])
     pt.setStyle(TableStyle([
         ("BACKGROUND",   (0,0),(-1,0), _hex_color("4A4A7A")),
@@ -511,15 +547,19 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
     story.append(Spacer(1, 12))
 
     # Distribuição por quadrante
-    story.append(Paragraph("Distribuição por Quadrante",
+    story.append(Paragraph(_pdf_para("Distribuição por Quadrante"),
                             ParagraphStyle("sh2", fontSize=11, fontName="Helvetica-Bold",
                                            textColor=DARK, spaceBefore=4, spaceAfter=6)))
-    q_data = [["Quadrante", "Total", "Concluídas", "Tempo (h:mm)"]]
+    q_data = [[_pdf_safe("Quadrante"), _pdf_safe("Total"),
+               _pdf_safe("Concluídas"), _pdf_safe("Tempo (h:mm)")]]
     for q in QUADRANT_ORDER:
         q_tasks = [t for t in tasks if str(t.quadrant).replace("EisenhowerQuadrant.", "") == q]
         q_done  = sum(1 for t in q_tasks if str(t.status) in ("done","TaskStatus.done"))
         q_time  = sum(t.time_spent_minutes for t in q_tasks)
-        q_data.append([Q_LABELS[q], str(len(q_tasks)), str(q_done), _time_label(q_time)])
+        q_data.append([
+            _pdf_safe(Q_LABELS[q]), _pdf_safe(str(len(q_tasks))),
+            _pdf_safe(str(q_done)), _pdf_safe(_time_label(q_time)),
+        ])
 
     qt = Table(q_data, colWidths=["50%","17%","17%","16%"])
     qt.setStyle(TableStyle([
@@ -539,16 +579,16 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
 
     # Tasks em andamento
     if in_prog:
-        story.append(Paragraph("Em Andamento",
+        story.append(Paragraph(_pdf_para("Em Andamento"),
                                 ParagraphStyle("sh3", fontSize=11, fontName="Helvetica-Bold",
                                                textColor=DARK, spaceBefore=4, spaceAfter=6)))
-        ip_data = [["Título", "Quadrante", "Prazo"]]
+        ip_data = [[_pdf_safe("Título"), _pdf_safe("Quadrante"), _pdf_safe("Prazo")]]
         for t in in_prog[:20]:  # máximo 20
             ip_data.append([
-                Paragraph(t.title, ParagraphStyle("c", fontSize=8, fontName="Helvetica",
-                                                   textColor=DARK, leading=10)),
-                Q_LABELS.get(str(t.quadrant).replace("EisenhowerQuadrant.", ""), ""),
-                t.due_date_iso or "—",
+                Paragraph(_pdf_para(t.title), ParagraphStyle("c", fontSize=8, fontName="Helvetica",
+                                                             textColor=DARK, leading=10)),
+                _pdf_safe(Q_LABELS.get(str(t.quadrant).replace("EisenhowerQuadrant.", ""), "")),
+                _pdf_safe(t.due_date_iso or "—"),
             ])
         ipt = Table(ip_data, colWidths=[9*cm, 5*cm, 3*cm])
         ipt.setStyle(TableStyle([
@@ -570,7 +610,7 @@ def _build_summary_pdf(project: Project, tasks: list[Task]) -> io.BytesIO:
     story.append(HRFlowable(width="100%", color=_hex_color("DDDDEE"), thickness=0.5))
     story.append(Spacer(1, 4))
     story.append(Paragraph(
-        f"OrchFlow · {project.name} · {date.today().strftime('%d/%m/%Y')}",
+        _pdf_para(f"OrchFlow · {project.name} · {date.today().strftime('%d/%m/%Y')}"),
         ParagraphStyle("ft", fontSize=8, fontName="Helvetica",
                        textColor=MUTED, alignment=1),
     ))

@@ -17,7 +17,7 @@ import {
   type ReactNode,
 } from 'react'
 import axios from 'axios'
-import { API_ROOT } from '../services/api'
+import { API_ROOT, friendlyHttpStatus } from '../services/api'
 
 // Helper: monta URL completa tanto em dev (/api/...) quanto em prod (https://railway.../api/...)
 const _url = (path: string) => API_ROOT ? `${API_ROOT}${path}` : path
@@ -112,8 +112,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── login ─────────────────────────────────────────────────────────────────
 
   const login = useCallback(async (email: string, password: string) => {
-    const { data } = await axios.post(_url('/api/auth/login'), { email, password })
-    _setSession(data.token, data.user)
+    try {
+      const { data } = await axios.post(_url('/api/auth/login'), { email, password })
+      _setSession(data.token, data.user)
+    } catch (e) {
+      const st = axios.isAxiosError(e) ? e.response?.status : undefined
+      const msg =
+        st != null
+          ? friendlyHttpStatus(st)
+          : 'Não foi possível entrar. Tente novamente.'
+      throw new Error(msg)
+    }
   }, [_setSession])
 
   // ── register ──────────────────────────────────────────────────────────────
@@ -124,8 +133,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     nickname?: string,
   ) => {
-    const { data } = await axios.post(_url('/api/auth/register'), { name, email, password, nickname })
-    _setSession(data.token, data.user)
+    try {
+      const { data } = await axios.post(_url('/api/auth/register'), { name, email, password, nickname })
+      _setSession(data.token, data.user)
+    } catch (e) {
+      const st = axios.isAxiosError(e) ? e.response?.status : undefined
+      const msg =
+        st != null
+          ? friendlyHttpStatus(st)
+          : 'Não foi possível criar a conta. Tente novamente.'
+      throw new Error(msg)
+    }
   }, [_setSession])
 
   // ── logout ────────────────────────────────────────────────────────────────

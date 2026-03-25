@@ -34,6 +34,9 @@ class Task(Base):
     project_id       = Column(UUID(as_uuid=True), ForeignKey("projects.id"))
     assignee_id      = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow)
+    # Soft delete (V1.5) — task permanece no banco até purge explícito
+    deleted_at       = Column(DateTime, nullable=True, index=True)
+    deleted_by       = Column(String, nullable=True)
 
     project  = relationship("Project", back_populates="tasks")
     assignee = relationship("User", foreign_keys=[assignee_id])

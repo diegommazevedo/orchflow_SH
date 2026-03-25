@@ -42,8 +42,10 @@ export function LoginPage() {
     try {
       await login(loginEmail.trim(), loginPassword)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail ?? 'Erro ao entrar. Verifique suas credenciais.'
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Erro ao entrar. Verifique suas credenciais.'
       setError(msg)
     } finally {
       setLoading(false)
@@ -63,8 +65,8 @@ export function LoginPage() {
       const nickname = (nicknameConform.bind.value as string) || undefined
       await register(name.trim(), regEmail.trim(), regPassword, nickname)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail ?? 'Erro ao criar conta.'
+      const msg =
+        err instanceof Error ? err.message : 'Erro ao criar conta.'
       setError(msg)
     } finally {
       setLoading(false)

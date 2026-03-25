@@ -19,6 +19,19 @@ export interface Task {
   project_id: string
   due_date_iso?: string | null
   assignee_id?: string | null
+  deleted_at?: string | null
+  deleted_by?: string | null
+}
+
+/** Task na lixeira (soft delete) — resposta de GET /tasks/trash/{project_id} */
+export interface TrashTaskItem {
+  id: string
+  title: string
+  status: TaskStatus
+  quadrant: EisenhowerQuadrant
+  project_id: string
+  deleted_at: string
+  deleted_by?: string | null
 }
 
 export const QUADRANT_LABELS: Record<EisenhowerQuadrant, string> = {
@@ -210,6 +223,7 @@ export type ActivityAction =
   | 'updated'
   | 'commented'
   | 'deleted'
+  | 'restored'
   | 'assigned'
   | 'due_changed'
   | 'quadrant_changed'

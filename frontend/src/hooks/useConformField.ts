@@ -22,7 +22,7 @@
  *   - CORS: 5173, 5174, 5175, 5180
  */
 import { useState, useCallback, useRef } from 'react'
-import axios from 'axios'
+import { api } from '../services/api'
 
 export type FieldType = 'title' | 'name' | 'description' | 'due_date' | 'currency'
 
@@ -96,7 +96,7 @@ export function useConformField(
     setFieldState(prev => ({ ...prev, status: 'conforming' }))
 
     try {
-      const { data } = await axios.post<ConformedResult>('/api/agent/conform-field', {
+      const { data } = await api.post<ConformedResult>('/agent/conform-field', {
         field_type: fieldType,
         value,
         context,

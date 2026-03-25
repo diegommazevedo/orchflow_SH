@@ -249,6 +249,7 @@ def complete_sprint(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
         done_count = db.query(Task).filter(
             Task.id.in_(task_ids),
             Task.status == TaskStatus.done,
+            Task.deleted_at.is_(None),
         ).count()
 
     # ── Duração em dias ─────────────────────────────────────────────────────
@@ -336,7 +337,11 @@ def get_sprint_board(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
     if not task_ids:
         return {"sprint_id": str(sprint_id), "columns": [], "tasks": []}
 
-    tasks = db.query(Task).filter(Task.id.in_(task_ids)).all()
+    tasks = (
+        db.query(Task)
+        .filter(Task.id.in_(task_ids), Task.deleted_at.is_(None))
+        .all()
+    )
 
     # Serializa tarefas
     task_list = []

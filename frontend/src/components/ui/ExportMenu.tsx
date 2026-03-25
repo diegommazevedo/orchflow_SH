@@ -7,6 +7,7 @@
  * - CORS mantido (requests para /api/export/*)
  */
 import { useState, useRef, useEffect } from 'react'
+import { friendlyHttpStatus, getApiAuthHeaders } from '../../services/api'
 
 interface Props {
   projectId: string
@@ -84,8 +85,12 @@ export function ExportMenu({ projectId, projectName }: Props) {
     setOpen(false)
 
     try {
-      const res = await fetch(opt.url(projectId))
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const res = await fetch(opt.url(projectId), { headers: getApiAuthHeaders() })
+      if (!res.ok) {
+        const msg = friendlyHttpStatus(res.status)
+        window.dispatchEvent(new CustomEvent('orchflow:api-error', { detail: { message: msg } }))
+        return
+      }
 
       const blob = await res.blob()
       const objUrl = URL.createObjectURL(new Blob([blob], { type: opt.mime }))
@@ -96,8 +101,12 @@ export function ExportMenu({ projectId, projectName }: Props) {
       anchor.click()
       document.body.removeChild(anchor)
       setTimeout(() => URL.revokeObjectURL(objUrl), 1500)
-    } catch (err) {
-      console.error('[ExportMenu] falha no download:', err)
+    } catch {
+      window.dispatchEvent(
+        new CustomEvent('orchflow:api-error', {
+          detail: { message: 'Não foi possível baixar o arquivo. Tente novamente.' },
+        }),
+      )
     } finally {
       setLoading(null)
     }

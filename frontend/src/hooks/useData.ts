@@ -2,8 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getProjects, createProject, deleteProject,
   getTasks, createTask, updateTaskStatus, addTaskTime, deleteTask, updateTask,
+  getTrashTasks, restoreTask, purgeTaskPermanent,
 } from '../services/api'
-import type { EisenhowerQuadrant, Task, TaskStatus, Project } from '../types'
+import type { EisenhowerQuadrant, Task, TaskStatus, Project, TrashTaskItem } from '../types'
 import { toArr } from '../utils/array'
 
 // ── PROJECTS ──────────────────────────────────────────
@@ -87,6 +88,40 @@ export function useDeleteTask() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteTask(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['trash'] })
+    },
+  })
+}
+
+export function useTrashTasks(projectId: string | null) {
+  return useQuery({
+    queryKey: ['trash', projectId],
+    queryFn: () => getTrashTasks(projectId!),
+    enabled: !!projectId,
+    select: (data) => toArr<TrashTaskItem>(data),
+  })
+}
+
+export function useRestoreTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => restoreTask(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['trash'] })
+    },
+  })
+}
+
+export function usePurgeTaskPermanent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => purgeTaskPermanent(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['trash'] })
+    },
   })
 }
