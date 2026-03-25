@@ -197,8 +197,22 @@ def update_task(
             changed_fields.append("due_date")
 
     if "quadrant" in updated:
-        task.quadrant = updated["quadrant"]
-        changed_fields.append("quadrant")
+        new_q = updated["quadrant"]
+        old_q = task.quadrant
+        if old_q != new_q:
+            task.quadrant = new_q
+            changed_fields.append("quadrant")
+            user_id_q = auth["user_id"] if auth else updated.get("user_id", "default")
+            _log(
+                db,
+                task.id,
+                "quadrant_changed",
+                user_id=user_id_q,
+                metadata={
+                    "from": old_q.value if hasattr(old_q, "value") else str(old_q),
+                    "to": new_q.value if hasattr(new_q, "value") else str(new_q),
+                },
+            )
     if "status" in updated:
         task.status = updated["status"]
         changed_fields.append("status")
@@ -206,11 +220,13 @@ def update_task(
         task.time_spent_minutes = (task.time_spent_minutes or 0) + updated["add_minutes"]
         changed_fields.append("time_spent_minutes")
 
-    # ── ActivityLog: "updated" (só se houve mudanças reais) ─────────────────
+    # ── ActivityLog: "updated" (mudanças que não são só quadrante — quadrant → log dedicado acima)
     if changed_fields:
         user_id = auth["user_id"] if auth else updated.get("user_id", "default")
-        _log(db, task.id, "updated", user_id=user_id,
-             metadata={"changed_fields": changed_fields})
+        bulk_fields = [f for f in changed_fields if f != "quadrant"]
+        if bulk_fields:
+            _log(db, task.id, "updated", user_id=user_id,
+                 metadata={"changed_fields": bulk_fields})
 
     db.commit()
     db.refresh(task)

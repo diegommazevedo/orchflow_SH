@@ -212,6 +212,7 @@ export type ActivityAction =
   | 'deleted'
   | 'assigned'
   | 'due_changed'
+  | 'quadrant_changed'
 
 export interface ActivityLog {
   id: string
