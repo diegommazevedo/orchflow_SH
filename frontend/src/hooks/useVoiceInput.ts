@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 
 type VoiceState = 'idle' | 'recording' | 'transcribing' | 'done' | 'error'
 
@@ -81,7 +81,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
         formData.append('language', 'pt')
 
         try {
-          const { data } = await axios.post('/api/voice/transcribe', formData, {
+          const { data } = await api.post('/voice/transcribe', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           })
           setTranscript(data.text)

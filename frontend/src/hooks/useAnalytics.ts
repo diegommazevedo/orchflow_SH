@@ -9,7 +9,7 @@
  *   - CORS: proxy Vite /api → 127.0.0.1:8010
  */
 import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
+import api from '../services/api'
 import type { RoiData, HeatmapDay } from '../types'
 
 const STALE = 5 * 60 * 1000   // 5 minutos
@@ -18,7 +18,7 @@ export function useRoiData(userId = 'default') {
   return useQuery<RoiData>({
     queryKey: ['analytics-roi', userId],
     queryFn:  async () => {
-      const res = await axios.get(`/api/analytics/roi/${userId}`)
+      const res = await api.get(`/analytics/roi/${userId}`)
       return res.data as RoiData
     },
     staleTime: STALE,
@@ -29,7 +29,7 @@ export function useHeatmap(userId = 'default') {
   return useQuery<HeatmapDay[]>({
     queryKey: ['analytics-heatmap', userId],
     queryFn:  async () => {
-      const res = await axios.get(`/api/analytics/heatmap/${userId}`)
+      const res = await api.get(`/analytics/heatmap/${userId}`)
       return res.data as HeatmapDay[]
     },
     staleTime: STALE,

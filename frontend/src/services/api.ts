@@ -129,7 +129,7 @@ export const confirmContractImport = async (payload: {
   tasks: ContractParseResult['tasks']
   user_id?: string
 }): Promise<{ project_id: string; tasks_created: number; message: string }> => {
-  const { data } = await axios.post('/api/upload/contract/confirm', {
+  const { data } = await api.post('/upload/contract/confirm', {
     project: payload.project,
     tasks: payload.tasks,
     user_id: payload.user_id ?? 'default',

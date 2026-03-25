@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
+import api from '../../services/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
 import { SmartDropzone } from '../upload/SmartDropzone'
@@ -327,12 +327,12 @@ export function ChatPanel({
     setLoading(true)
 
     try {
-      const { data } = await axios.post<Intent>('/api/agent/interpret', {
+      const { data } = await api.post<Intent>('/agent/interpret', {
         message: text, project_id: projectId, user_id: 'default',
       })
 
       if (data.wizard_mode === 'silent' && projectId) {
-        const { data: result } = await axios.post('/api/agent/execute', {
+        const { data: result } = await api.post('/agent/execute', {
           intent: data, project_id: projectId, user_id: 'default',
         })
         showToast(result.message)
@@ -403,7 +403,7 @@ export function ChatPanel({
     if (!projectId) return
     setWizState(idx, 'executing')
     try {
-      const { data } = await axios.post('/api/agent/execute', {
+      const { data } = await api.post('/agent/execute', {
         intent, project_id: projectId, user_id: 'default',
       })
       setWizState(idx, 'confirmed')

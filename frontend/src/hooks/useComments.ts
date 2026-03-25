@@ -9,13 +9,13 @@
  * - ConformityEngine aplicado no backend (POST /api/comments/task/{id})
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import api from '../services/api'
 import type { Comment, ActivityLog, ActivityAction } from '../types'
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
 async function fetchComments(taskId: string): Promise<Comment[]> {
-  const { data } = await axios.get<Comment[]>(`/api/comments/task/${taskId}`)
+  const { data } = await api.get<Comment[]>(`/comments/task/${taskId}`)
   return data
 }
 
@@ -24,7 +24,7 @@ async function postComment(
   body: string,
   mentions: string[] = [],
 ): Promise<Comment> {
-  const { data } = await axios.post<Comment>(`/api/comments/task/${taskId}`, {
+  const { data } = await api.post<Comment>(`/comments/task/${taskId}`, {
     body,
     mentions,
     user_id: 'default',
@@ -33,15 +33,15 @@ async function postComment(
 }
 
 async function softDeleteComment(commentId: string): Promise<void> {
-  await axios.delete(`/api/comments/${commentId}`)
+  await api.delete(`/comments/${commentId}`)
 }
 
 async function fetchActivity(
   entityType: string,
   entityId: string,
 ): Promise<ActivityLog[]> {
-  const { data } = await axios.get<ActivityLog[]>(
-    `/api/activity/entity/${entityType}/${entityId}`,
+  const { data } = await api.get<ActivityLog[]>(
+    `/activity/entity/${entityType}/${entityId}`,
   )
   return data
 }

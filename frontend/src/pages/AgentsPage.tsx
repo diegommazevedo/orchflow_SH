@@ -16,7 +16,7 @@
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import api from '../services/api'
 import type { ProductivitySnapshot } from '../types'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function useMemoryStats() {
   return useQuery<MemoryStats>({
     queryKey: ['memory-stats'],
     queryFn: async () => {
-      const { data } = await axios.get('/api/agent/memory/stats/default')
+      const { data } = await api.get('/agent/memory/stats/default')
       return data
     },
     refetchInterval: 30_000,
@@ -88,7 +88,7 @@ function useProfile() {
   return useQuery<UserProfile>({
     queryKey: ['agent-profile'],
     queryFn: async () => {
-      const { data } = await axios.get('/api/agent/profile/default')
+      const { data } = await api.get('/agent/profile/default')
       return data
     },
   })
@@ -101,7 +101,7 @@ function AgentCard({ agent }: { agent: AgentInfo }) {
     queryKey: ['agent-ping', agent.id],
     queryFn: async () => {
       if (!agent.checkUrl) return { ok: true }
-      await axios.get(agent.checkUrl)
+      await api.get(agent.checkUrl.replace('/api/', '/'))
       return { ok: true }
     },
     retry: 1,
@@ -210,7 +210,7 @@ function DictSection({ profile }: { profile: UserProfile }) {
 
   const removeEntry = useMutation({
     mutationFn: async (key: string) => {
-      await axios.patch(`/api/agent/profile/${profile.user_id}`, {
+      await api.patch(`/agent/profile/${profile.user_id}`, {
         personal_dict_remove: [key],
       })
     },
@@ -260,13 +260,11 @@ function DictSection({ profile }: { profile: UserProfile }) {
 
 // ── Hook de produtividade ─────────────────────────────────────────────────────
 
-const API = 'http://localhost:8010'
-
 function useProductivity(userId = 'default') {
   return useQuery({
     queryKey: ['productivity', userId],
     queryFn: async () => {
-      const res = await axios.get(`${API}/api/focus/productivity/${userId}`)
+      const res = await api.get(`/focus/productivity/${userId}`)
       return res.data as { snapshots: ProductivitySnapshot[]; log_md: string }
     },
     staleTime: 60_000,
