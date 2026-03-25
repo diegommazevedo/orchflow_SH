@@ -16,8 +16,14 @@ import type { Project, Task, TaskStatus, EisenhowerQuadrant, ContractParseResult
 
 const TOKEN_KEY = 'orchflow-token'
 
-// Em produção VITE_API_URL é a URL raiz do Railway (sem /api no final)
-export const API_ROOT = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+// Produção: VITE_API_URL injetado pelo Vercel, ou fallback para Railway direto
+const _RAILWAY = 'https://orchflowsh-production.up.railway.app'
+const _isLocal = typeof window !== 'undefined'
+  && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+export const API_ROOT: string =
+  (import.meta.env.VITE_API_URL as string | undefined)
+  ?? (_isLocal ? '' : _RAILWAY)
 
 const api = axios.create({
   baseURL: API_ROOT ? `${API_ROOT}/api` : '/api',
