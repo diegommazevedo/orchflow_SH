@@ -13,11 +13,8 @@
  */
 import { useState, useRef, useCallback, DragEvent, ChangeEvent } from 'react'
 import axios from 'axios'
+import api from '../../services/api'
 import type { ContractParseResult, SheetParseResult } from '../../types'
-import { API_ROOT } from '../../services/api'
-
-// Em produção usa URL absoluta do Railway; em dev usa proxy Vite
-const _apiUrl = (path: string) => API_ROOT ? `${API_ROOT}${path}` : path
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -88,7 +85,7 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       // ── 1. Detectar tipo ─────────────────────────────────────────────────
       const fd1 = new FormData()
       fd1.append('file', file)
-      const { data: detect } = await axios.post<DetectResult>(_apiUrl('/api/upload/detect'), fd1)
+      const { data: detect } = await api.post<DetectResult>('/upload/detect', fd1)
 
       const info = TYPE_INFO[detect.file_type] ?? TYPE_INFO.unknown
       setDetection({
@@ -107,19 +104,19 @@ export function SmartDropzone({ onContractResult, onSheetResult, onAudioTranscri
       switch (detect.file_type) {
         case 'contract_pdf': {
           fd2.append('file', file)
-          const { data } = await axios.post<ContractParseResult>(_apiUrl('/api/upload/contract'), fd2)
+          const { data } = await api.post<ContractParseResult>('/upload/contract', fd2)
           onContractResult(data)
           break
         }
         case 'sheet': {
           fd2.append('file', file)
-          const { data } = await axios.post<SheetParseResult>(_apiUrl('/api/upload/sheet'), fd2)
+          const { data } = await api.post<SheetParseResult>('/upload/sheet', fd2)
           onSheetResult(data)
           break
         }
         case 'audio': {
           fd2.append('audio', file)
-          const { data } = await axios.post<{ text: string }>(_apiUrl('/api/voice/transcribe'), fd2)
+          const { data } = await api.post<{ text: string }>('/voice/transcribe', fd2)
           onAudioTranscript(data.text)
           break
         }
