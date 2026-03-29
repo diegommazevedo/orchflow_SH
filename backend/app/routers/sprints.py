@@ -297,7 +297,11 @@ def get_series(
 
 
 @router.post("/{sprint_id}/start", response_model=SprintResponse)
-def start_sprint(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
+def start_sprint(
+    sprint_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Inicia o sprint:
     - status = active
@@ -314,6 +318,7 @@ def start_sprint(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
     sprint.start_date = date.today().isoformat()
 
     _log(db, sprint.id, "sprint_started",
+         user_id    = str(current_user.id),
          extra_data = {
              "name":       sprint.name,
              "start_date": sprint.start_date,

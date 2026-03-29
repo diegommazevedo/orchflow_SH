@@ -151,7 +151,11 @@ class OrchFlowCorsGuardMiddleware(BaseHTTPMiddleware):
                     "Access-Control-Max-Age": "86400",
                 },
             )
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            from starlette.responses import JSONResponse as _JR
+            response = _JR(status_code=500, content={"detail": "Internal server error"})
         if _cors_origin_allowed(origin):
             h = response.headers
             if "access-control-allow-origin" not in h:
