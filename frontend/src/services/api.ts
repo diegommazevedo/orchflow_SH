@@ -36,6 +36,7 @@ import type {
   AIWallet,
   AIUsageSummary,
   AIEngine,
+  Sprint,
 } from '../types'
 
 const TOKEN_KEY = 'orchflow-token'
@@ -356,6 +357,8 @@ export const updateTask = async (
     due_date_iso?: string | null
     assignee_hint?: string | null
     add_minutes?: number
+    is_recurring?: boolean
+    sprint_id?: string | null
   }
 ): Promise<Task> => {
   const { data } = await api.patch(`/tasks/${id}`, payload)
@@ -364,6 +367,31 @@ export const updateTask = async (
 
 export const deleteTask = async (id: string): Promise<void> => {
   await api.delete(`/tasks/${id}`)
+}
+
+// ── SPRINT TASK ASSIGNMENT — Sprint 9 ─────────────────────────────────────
+
+/** GET /sprints/project/{projectId} filtered to active sprints */
+export const getActiveSprints = async (projectId: string): Promise<Sprint[]> => {
+  const { data } = await api.get<Sprint[]>(`/sprints/project/${projectId}`)
+  return (data as Sprint[]).filter(s => s.status === 'active')
+}
+
+/** PATCH /tasks/{taskId} with sprint_id (null = remove from sprint) */
+export const assignTaskToSprint = async (
+  taskId: string,
+  sprintId: string | null,
+): Promise<Task> => {
+  const { data } = await api.patch<Task>(`/tasks/${taskId}`, { sprint_id: sprintId })
+  return data
+}
+
+/** Parallel PATCH for multiple tasks */
+export const assignTasksToSprint = async (
+  taskIds: string[],
+  sprintId: string | null,
+): Promise<void> => {
+  await Promise.all(taskIds.map(id => assignTaskToSprint(id, sprintId)))
 }
 
 export const getTrashTasks = async (projectId: string): Promise<TrashTaskItem[]> => {

@@ -55,6 +55,7 @@ class RefreshBody(BaseModel):
 
 COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 dias
 COOKIE_SECURE = os.getenv("ENVIRONMENT", "development") == "production"
+COOKIE_SAMESITE = "none" if COOKIE_SECURE else "lax"
 
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
@@ -63,13 +64,20 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         value=token,
         httponly=True,
         secure=COOKIE_SECURE,
-        samesite="lax",
+        samesite=COOKIE_SAMESITE,
         max_age=COOKIE_MAX_AGE,
+        path="/",
     )
 
 
 def _clear_refresh_cookie(response: Response) -> None:
-    response.delete_cookie(key="refresh_token", httponly=True, samesite="lax")
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/",
+    )
 
 
 def _workspace_for_user(db: Session, user: User) -> Workspace | None:

@@ -231,6 +231,21 @@ async def validate_security_config():
 def on_startup():
     Base.metadata.create_all(bind=engine)
 
+    # Auth schema drift fix for older production databases.
+    try:
+        with engine.connect() as conn:
+            for col_def in [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(200) UNIQUE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id VARCHAR(200) UNIQUE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ",
+            ]:
+                conn.execute(text(col_def))
+            conn.commit()
+    except Exception:
+        pass
+
     if engine.dialect.name == "postgresql":
         try:
             with engine.connect() as conn:

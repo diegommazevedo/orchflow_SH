@@ -14,11 +14,12 @@ import sys
 import os
 import uuid
 from datetime import datetime
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 # ── Carregar .env manualmente (sem depender do app) ───────────────────────────
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
-    with open(env_path) as f:
+    with open(env_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -54,6 +55,35 @@ def uid() -> str:
 def now() -> str:
     return datetime.utcnow().isoformat()
 
+
+def connect_db(db_url: str):
+    """
+    Conecta ao Postgres sem depender do parser DSN do psycopg2.
+    Isso evita falhas de decoding quando a senha do DATABASE_URL
+    tem caracteres especiais ou percent-encoding.
+    """
+    normalized = (
+        db_url
+        .replace("postgresql+psycopg2://", "postgresql://")
+        .replace("postgres://", "postgresql://", 1)
+    )
+    parsed = urlsplit(normalized)
+    if parsed.scheme not in ("postgresql", "postgres"):
+        raise ValueError(f"Scheme de DATABASE_URL não suportado: {parsed.scheme}")
+
+    conn_kwargs = {
+        "dbname": unquote(parsed.path.lstrip("/")),
+        "user": unquote(parsed.username) if parsed.username else None,
+        "password": unquote(parsed.password) if parsed.password else None,
+        "host": parsed.hostname,
+        "port": parsed.port,
+    }
+    for key, value in parse_qsl(parsed.query, keep_blank_values=True):
+        conn_kwargs[key] = value
+
+    clean_kwargs = {k: v for k, v in conn_kwargs.items() if v is not None}
+    return psycopg2.connect(**clean_kwargs)
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -62,11 +92,7 @@ def main() -> None:
         print("[ERRO] DATABASE_URL nao encontrada no .env")
         sys.exit(1)
 
-    # Converter URL SQLAlchemy → psycopg2 DSN
-    # postgresql://user:pass@host:port/dbname  →  mesma string funciona no psycopg2
-    dsn = db_url.replace("postgresql+psycopg2://", "postgresql://")
-
-    conn = psycopg2.connect(dsn)
+    conn = connect_db(db_url)
     conn.autocommit = False
     cur = conn.cursor(cursor_factory=RealDictCursor)
 

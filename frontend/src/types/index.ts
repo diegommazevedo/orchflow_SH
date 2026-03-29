@@ -84,6 +84,8 @@ export interface Task {
   /** Sprint 7: Recorrência */
   is_recurring?: boolean
   recurring_template_id?: string | null
+  /** Sprint 9: sprint atual da task (null = backlog) */
+  sprint_id?: string | null
 }
 
 /** Task na lixeira (soft delete) — resposta de GET /tasks/trash/{project_id} */

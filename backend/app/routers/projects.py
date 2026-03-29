@@ -6,8 +6,9 @@ from app.models.template import VerticalTemplate
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.kanban import KanbanColumn
-from app.models.schema import CustomField
+from app.models.schema import CustomField, CustomFieldValue
 from app.models.activity import ActivityLog
+from app.models.task import Task
 from app.agent.conformity import conform_name
 from app.v2_seed import ensure_project_kanban_defaults
 from app.auth.dependencies import get_current_user, get_current_workspace
@@ -132,7 +133,25 @@ def delete_project(
 ):
     project = db.query(Project).filter(Project.id == project_id, Project.workspace_id == current_workspace.id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+        raise HTTPException(status_code=404, detail="Projeto n?o encontrado")
+
+    field_ids = [
+        row[0]
+        for row in db.query(CustomField.id).filter(CustomField.project_id == project.id).all()
+    ]
+    if field_ids:
+        db.query(CustomFieldValue).filter(CustomFieldValue.field_id.in_(field_ids)).delete(
+            synchronize_session=False
+        )
+    db.query(CustomField).filter(CustomField.project_id == project.id).delete(
+        synchronize_session=False
+    )
+    db.query(KanbanColumn).filter(KanbanColumn.project_id == project.id).delete(
+        synchronize_session=False
+    )
+    db.query(Task).filter(Task.project_id == project.id).delete(
+        synchronize_session=False
+    )
     db.delete(project)
     db.commit()
     return {"ok": True}

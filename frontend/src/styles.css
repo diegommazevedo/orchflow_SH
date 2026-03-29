@@ -6450,3 +6450,199 @@ body {
 .org-danger-btn { background: #f43f5e18; border: 1px solid #f43f5e40; border-radius: 8px; color: #f43f5e; font-size: 13px; padding: 8px 16px; cursor: pointer; transition: background .15s; }
 .org-danger-btn:hover { background: #f43f5e30; }
 .org-danger-confirm { display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
+
+/* ── Sprint 9: Sprint Assignment Flows ──────────────────────────────────────── */
+
+/* Fluxo 1 — Sprint button per card */
+.task-sprint-row { position: relative; padding: 2px 10px 0; }
+
+.sprint-assign-btn {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.task-card:hover .sprint-assign-btn,
+.task-card-selected .sprint-assign-btn { display: flex; }
+.sprint-assign-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.sprint-assign-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 10px;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 180px;
+  max-width: 240px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+
+.sprint-assign-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s;
+}
+.sprint-assign-item:hover:not(:disabled) { background: var(--surface2); }
+.sprint-assign-item:disabled { opacity: .6; cursor: default; }
+.sprint-assign-item-current { color: var(--accent); }
+.sprint-assign-remove { color: #f43f5e; border-bottom: 1px solid var(--border); }
+.sprint-assign-remove:hover { background: #f43f5e12 !important; }
+.sprint-assign-badge { font-size: 11px; flex-shrink: 0; }
+.sprint-assign-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sprint-assign-check { font-size: 11px; color: var(--accent); flex-shrink: 0; }
+.sprint-assign-empty { display: block; padding: 10px 12px; font-size: 12px; color: var(--muted); }
+
+/* Task sprint badge */
+.task-sprint-badge {
+  font-size: 10px;
+  color: #facc15;
+  background: #facc1514;
+  border: 1px solid #facc1530;
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* Task selected state */
+.task-card-selected {
+  border: 1px solid var(--accent) !important;
+  background: rgba(124,109,240,.06) !important;
+}
+
+/* Checkbox */
+.task-select-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.task-select-checkbox-visible,
+.task-card:hover .task-select-checkbox,
+.task-card-selected .task-select-checkbox { opacity: 1; }
+
+/* Fluxo 2 — Bulk action bar */
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.bulk-count { font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.bulk-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.bulk-sprint-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  outline: none;
+}
+.bulk-sprint-select:focus { border-color: var(--accent); }
+
+.bulk-btn {
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: opacity .15s;
+  font-weight: 500;
+}
+.bulk-btn:disabled { opacity: .5; cursor: not-allowed; }
+.bulk-btn-remove { background: #f43f5e18; color: #f43f5e; border: 1px solid #f43f5e30; }
+.bulk-btn-remove:hover:not(:disabled) { background: #f43f5e28; }
+.bulk-btn-cancel { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.bulk-btn-cancel:hover { background: var(--border); }
+
+/* Fluxo 3 — Drag sprint drop zones */
+.sprint-drop-zones {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.sprint-drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 120px;
+  transition: border-color .15s, background .15s, color .15s;
+  cursor: default;
+}
+.sprint-drop-zone-over {
+  border-color: var(--accent);
+  background: rgba(124,109,240,.08);
+  color: var(--accent);
+}
+.sprint-drop-zone-backlog {
+  border-color: #666688;
+  color: #666688;
+}
+.sprint-drop-zone-backlog.sprint-drop-zone-over {
+  border-color: #5eead4;
+  background: rgba(94,234,212,.08);
+  color: #5eead4;
+}
+
+/* Board mini-toast */
+.board-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  z-index: 9999;
+  pointer-events: none;
+  animation: toast-in .2s ease;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

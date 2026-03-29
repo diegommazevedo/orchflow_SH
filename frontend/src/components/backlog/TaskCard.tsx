@@ -1,21 +1,18 @@
 /**
  * TaskCard — card individual no Kanban.
  *
- * Refinamentos visuais:
- * - Avatar círculo 20px no canto (iniciais do assignee)
- * - Overdue: border-left 2px #f43f5e no card inteiro
- * - Blocked: ícone ⛔ no Q-pill + opacity 0.75
- * - Animações: card-new (slide-in) / card-bounced (micro-bounce)
- * - Q-pill com borda sólida
+ * Sprint 9 additions:
+ * - Fluxo 1: Botão ⚡ Sprint no hover → dropdown de sprints ativos
+ * - Seleção via checkbox (Fluxo 2): visible on hover ou quando qualquer task selecionada
  *
  * Leis respeitadas:
  * - delete_task = HIGH → wizard obrigatório (mini-modal inline)
  * - Zero escrita sem confirmação
  */
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Task } from '../../types'
+import type { Task, Sprint } from '../../types'
 import { useDeleteTask } from '../../hooks/useData'
 import { nameToColor, initialsFromName, extractAssigneeFromTitle } from '../../utils/avatar'
 
@@ -24,6 +21,12 @@ const Q_STYLE: Record<string, { bg: string; color: string; border: string }> = {
   q2: { bg: '#f59e0b15', color: '#f59e0b', border: '#f59e0b40' },
   q3: { bg: '#48cae415', color: '#48cae4', border: '#48cae440' },
   q4: { bg: '#44445518', color: '#666688', border: '#44445540' },
+}
+
+const TYPE_BADGE: Record<string, { label: string; color: string }> = {
+  standard:   { label: 'Sprint',       color: '#666688' },
+  recorrente: { label: '↻ Recorrente', color: '#48cae4' },
+  encaixe:    { label: '⚡ Encaixe',   color: '#facc15' },
 }
 
 function calcDueGap(iso: string | null | undefined) {
@@ -54,14 +57,27 @@ interface Props {
   onOpenDetail?: (task: Task) => void
   isNew?: boolean
   isBounced?: boolean
+  // Sprint 9: selection (Fluxo 2)
+  isSelected?: boolean
+  anySelected?: boolean
+  onToggleSelect?: (taskId: string, shiftKey: boolean) => void
+  // Sprint 9: sprint assignment (Fluxo 1)
+  activeSprints?: Sprint[]
+  onAssignSprint?: (taskId: string, sprintId: string | null) => void
 }
 
-export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Props) {
+export function TaskCard({
+  task, overlay, onOpenDetail, isNew, isBounced,
+  isSelected, anySelected, onToggleSelect,
+  activeSprints = [], onAssignSprint,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id })
 
   const deleteTask = useDeleteTask()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showSprintDrop, setShowSprintDrop] = useState(false)
+  const sprintDropRef = useRef<HTMLDivElement>(null)
 
   const q        = Q_STYLE[task.quadrant] ?? Q_STYLE.q2
   const due      = calcDueGap(task.due_date_iso)
@@ -75,7 +91,23 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
     ? hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
     : null
 
-  // Classe de animação (só uma por vez)
+  // Close sprint dropdown on outside click or ESC
+  useEffect(() => {
+    if (!showSprintDrop) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setShowSprintDrop(false) }
+    function onClickOut(e: MouseEvent) {
+      if (sprintDropRef.current && !sprintDropRef.current.contains(e.target as Node)) {
+        setShowSprintDrop(false)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onClickOut)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onClickOut)
+    }
+  }, [showSprintDrop])
+
   let animClass = ''
   if (isNew)     animClass = ' card-new'
   else if (isBounced) animClass = ' card-bounced'
@@ -85,6 +117,7 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
     overlay    ? 'overlay' : '',
     isBlocked  ? 'task-card-blocked' : '',
     isOverdue  ? 'task-card-overdue' : '',
+    isSelected ? 'task-card-selected' : '',
     animClass,
   ].filter(Boolean).join(' ')
 
@@ -94,26 +127,41 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
     opacity: isDragging ? 0.4 : 1,
   }
 
+  const currentSprint = task.sprint_id
+    ? activeSprints.find(s => s.id === task.sprint_id) ?? null
+    : null
+
   return (
     <div ref={setNodeRef} style={style} className={cardClass}>
       <div className="task-card-top">
+        {/* Checkbox Fluxo 2 */}
+        {!overlay && onToggleSelect && (
+          <input
+            type="checkbox"
+            className={`task-select-checkbox${anySelected ? ' task-select-checkbox-visible' : ''}`}
+            checked={!!isSelected}
+            onChange={() => {/* handled by click */}}
+            onClick={e => {
+              e.stopPropagation()
+              onToggleSelect(task.id, e.shiftKey)
+            }}
+            title="Selecionar tarefa"
+          />
+        )}
+
         <span className="drag-handle" {...attributes} {...listeners} title="Arrastar">⠿</span>
 
-        {/* Q-pill com borda sólida — blocked mostra ⛔ */}
+        {/* Q-pill */}
         <span
           className="q-pill"
-          style={{
-            background: q.bg,
-            color: q.color,
-            border: `1px solid ${q.border}`,
-          }}
+          style={{ background: q.bg, color: q.color, border: `1px solid ${q.border}` }}
         >
           {isBlocked ? '⛔ ' : ''}{task.quadrant.toUpperCase()}
         </span>
 
         <span className="task-id">#{task.id.slice(0, 6)}</span>
 
-        {/* Avatar assignee — canto superior direito */}
+        {/* Avatar */}
         {assigneeName && (
           <span
             className="task-avatar"
@@ -124,18 +172,12 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
           </span>
         )}
 
-        {/* Delete wizard inline — HIGH risk */}
+        {/* Delete wizard */}
         {confirmDelete ? (
           <div className="delete-confirm">
             <span className="dc-label">Remover?</span>
-            <button
-              className="dc-confirm"
-              onClick={e => { e.stopPropagation(); deleteTask.mutate(task.id) }}
-            >✓</button>
-            <button
-              className="dc-cancel"
-              onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}
-            >✕</button>
+            <button className="dc-confirm" onClick={e => { e.stopPropagation(); deleteTask.mutate(task.id) }}>✓</button>
+            <button className="dc-cancel" onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}>✕</button>
           </div>
         ) : (
           <button
@@ -146,7 +188,62 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
         )}
       </div>
 
-      {/* Corpo clicável → painel de detalhe */}
+      {/* Sprint button — Fluxo 1 */}
+      {!overlay && onAssignSprint && (
+        <div className="task-sprint-row" ref={sprintDropRef}>
+          <button
+            className="sprint-assign-btn"
+            onClick={e => { e.stopPropagation(); setShowSprintDrop(v => !v) }}
+            title="Mover para sprint"
+          >
+            ⚡ {currentSprint ? currentSprint.name : 'Sprint'}
+          </button>
+
+          {showSprintDrop && (
+            <div className="sprint-assign-dropdown">
+              {currentSprint && (
+                <button
+                  className="sprint-assign-item sprint-assign-remove"
+                  onClick={e => {
+                    e.stopPropagation()
+                    onAssignSprint(task.id, null)
+                    setShowSprintDrop(false)
+                  }}
+                >
+                  ✕ Remover do sprint
+                </button>
+              )}
+              {activeSprints.length === 0 && (
+                <span className="sprint-assign-empty">Nenhum sprint ativo</span>
+              )}
+              {activeSprints.map(s => {
+                const badge = TYPE_BADGE[s.type] ?? TYPE_BADGE.standard
+                const isCurrent = s.id === task.sprint_id
+                return (
+                  <button
+                    key={s.id}
+                    className={`sprint-assign-item${isCurrent ? ' sprint-assign-item-current' : ''}`}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (!isCurrent) onAssignSprint(task.id, s.id)
+                      setShowSprintDrop(false)
+                    }}
+                    disabled={isCurrent}
+                  >
+                    <span className="sprint-assign-badge" style={{ color: badge.color }}>
+                      {badge.label}
+                    </span>
+                    <span className="sprint-assign-name">{s.name}</span>
+                    {isCurrent && <span className="sprint-assign-check">✓</span>}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Corpo */}
       <div
         className="task-body"
         onClick={() => !confirmDelete && onOpenDetail?.(task)}
@@ -169,15 +266,17 @@ export function TaskCard({ task, overlay, onOpenDetail, isNew, isBounced }: Prop
             <span
               className="task-subtask-badge"
               style={{
-                color:
-                  task.completed_subtask_count === task.subtask_count
-                    ? '#5eead4'
-                    : (task.completed_subtask_count ?? 0) > 0
-                      ? '#facc15'
-                      : '#666688',
+                color: task.completed_subtask_count === task.subtask_count
+                  ? '#5eead4'
+                  : (task.completed_subtask_count ?? 0) > 0 ? '#facc15' : '#666688',
               }}
             >
               ◻ {task.completed_subtask_count ?? 0}/{task.subtask_count}
+            </span>
+          )}
+          {currentSprint && (
+            <span className="task-sprint-badge" title={`Sprint: ${currentSprint.name}`}>
+              ⚡ {currentSprint.name}
             </span>
           )}
         </div>

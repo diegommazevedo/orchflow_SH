@@ -12,6 +12,7 @@ Sprint 3F:
 
 import json
 import logging
+import traceback
 import threading
 import time
 import uuid
@@ -104,41 +105,51 @@ async def upload_contract(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Envie um arquivo .pdf")
 
     content = await file.read()
+    logger.info(f"[upload/contract] arquivo={file.filename!r} tamanho={len(content)} bytes")
+
     try:
         text = extract_text(content)
+        logger.info(f"[upload/contract] extract_text ok — {len(text)} chars extraídos")
     except ValueError as e:
+        logger.error(f"[upload/contract] extract_text ValueError: {e}")
         raise HTTPException(status_code=422, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Falha ao ler PDF: {e}")
+    except Exception:
+        logger.error(f"[upload/contract] extract_text falhou:\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Falha ao ler PDF.")
 
     try:
         parsed = parse_contract(text)
+        logger.info("[upload/contract] parse_contract ok")
     except GroqAuthError:
-        logger.error("GROQ_API_KEY inválida ao parsear contrato — chave revogada ou ausente.")
+        logger.error("[upload/contract] GROQ_API_KEY inválida — chave revogada ou ausente.")
         raise HTTPException(
             status_code=503,
             detail="Serviço de IA indisponível. Verifique a GROQ_API_KEY no servidor.",
         )
     except ValueError as e:
+        logger.error(f"[upload/contract] parse_contract ValueError: {e}")
         raise HTTPException(status_code=422, detail=str(e))
-    except Exception as e:
-        logger.error(f"Erro ao parsear contrato: {e}")
+    except Exception:
+        logger.error(f"[upload/contract] parse_contract falhou:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail="Erro ao processar o contrato. Tente novamente.",
         )
 
     tasks_in = parsed.get("tasks") or []
+    logger.info(f"[upload/contract] {len(tasks_in)} tarefas → review_backlog")
+
     try:
         reviewed = review_backlog(tasks_in)
+        logger.info(f"[upload/contract] review_backlog ok — {len(reviewed)} tarefas revisadas")
     except GroqAuthError:
-        logger.error("GROQ_API_KEY inválida ao revisar backlog — chave revogada ou ausente.")
+        logger.error("[upload/contract] GROQ_API_KEY inválida no review_backlog.")
         raise HTTPException(
             status_code=503,
             detail="Serviço de IA indisponível. Verifique a GROQ_API_KEY no servidor.",
         )
-    except Exception as e:
-        logger.error(f"Erro ao revisar backlog: {e}")
+    except Exception:
+        logger.error(f"[upload/contract] review_backlog falhou:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail="Erro ao processar o contrato. Tente novamente.",

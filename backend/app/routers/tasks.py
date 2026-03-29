@@ -21,6 +21,7 @@ from app.models.activity import ActivityLog
 from app.agent.conformity import conform_task_payload, conform_date
 from app.auth.dependencies import get_current_user, get_current_workspace
 from app.models.kanban import KanbanColumn
+from app.models.sprint import Sprint, SprintTask
 from app.services.kanban_status import (
     coerce_task_status_on_create,
     require_valid_status,
@@ -60,6 +61,7 @@ class TaskResponse(BaseModel):
     subtask_count: int = 0
     completed_subtask_count: int = 0
     is_recurring: bool = False
+    sprint_id: Optional[uuid.UUID] = None  # Sprint 9: sprint atual da task
 
     class Config:
         from_attributes = True
@@ -96,6 +98,7 @@ class TaskUpdate(BaseModel):
     assignee_hint: Optional[str] = None
     add_minutes:   Optional[int] = None
     is_recurring:  Optional[bool] = None
+    sprint_id:     Optional[uuid.UUID] = None  # Sprint 9: atribuição de sprint
 
 
 # ── Helper: gravar ActivityLog (append-only) ─────────────────────────────────
@@ -142,13 +145,13 @@ def list_trash(
     return q.all()
 
 
-def _enrich_subtask_counts(db: Session, tasks: list[Task]) -> list[dict]:
-    """Add subtask_count and completed_subtask_count to each task."""
+def _enrich_tasks(db: Session, tasks: list[Task]) -> list[dict]:
+    """Add subtask_count, completed_subtask_count, sprint_id to each task dict."""
     if not tasks:
         return []
     task_ids = [t.id for t in tasks]
 
-    # Count all subtasks per parent
+    # ── Subtask totals ──────────────────────────────────────────────────────
     total_q = (
         db.query(Task.parent_task_id, func.count(Task.id))
         .filter(Task.parent_task_id.in_(task_ids), Task.deleted_at.is_(None))
@@ -157,8 +160,6 @@ def _enrich_subtask_counts(db: Session, tasks: list[Task]) -> list[dict]:
     )
     total_map = {pid: cnt for pid, cnt in total_q}
 
-    # Count completed subtasks (status matches is_done column)
-    # Build a set of done slugs per project
     project_ids = list({t.project_id for t in tasks})
     done_cols = (
         db.query(KanbanColumn.project_id, KanbanColumn.slug)
@@ -184,11 +185,20 @@ def _enrich_subtask_counts(db: Session, tasks: list[Task]) -> list[dict]:
             )
             completed_map[t.id] = cnt or 0
 
+    # ── Sprint assignments ──────────────────────────────────────────────────
+    sprint_rows = (
+        db.query(SprintTask.task_id, SprintTask.sprint_id)
+        .filter(SprintTask.task_id.in_(task_ids))
+        .all()
+    )
+    sprint_map = {ta: si for ta, si in sprint_rows}
+
     results = []
     for t in tasks:
         d = {c.name: getattr(t, c.name) for c in t.__table__.columns}
-        d["subtask_count"] = total_map.get(t.id, 0)
+        d["subtask_count"]           = total_map.get(t.id, 0)
         d["completed_subtask_count"] = completed_map.get(t.id, 0)
+        d["sprint_id"]               = sprint_map.get(t.id)
         results.append(d)
     return results
 
@@ -203,7 +213,7 @@ def list_tasks(
     if project_id:
         q = q.filter(Task.project_id == project_id)
     tasks = q.all()
-    return _enrich_subtask_counts(db, tasks)
+    return _enrich_tasks(db, tasks)
 
 
 @router.post("/", response_model=TaskResponse)
@@ -353,6 +363,24 @@ def update_task(
         task.is_recurring = updated["is_recurring"]
         changed_fields.append("is_recurring")
 
+    # ── Sprint assignment ────────────────────────────────────────────────────
+    if "sprint_id" in updated:
+        new_sprint_id = updated["sprint_id"]
+        # Remove from any existing sprint first
+        existing_st = db.query(SprintTask).filter(SprintTask.task_id == task_id).first()
+        if existing_st:
+            db.delete(existing_st)
+            db.flush()
+        # Assign to new sprint (None = remove only)
+        if new_sprint_id is not None:
+            sprint = db.query(Sprint).filter(Sprint.id == new_sprint_id).first()
+            if not sprint:
+                raise HTTPException(status_code=404, detail="Sprint não encontrado")
+            if sprint.project_id != task.project_id:
+                raise HTTPException(status_code=422, detail="Sprint pertence a outro projeto")
+            db.add(SprintTask(sprint_id=new_sprint_id, task_id=task_id))
+        changed_fields.append("sprint")
+
     # ── ActivityLog: "updated" (mudanças que não são só quadrante — quadrant → log dedicado acima)
     if changed_fields:
         user_id = str(current_user.id)
@@ -363,7 +391,8 @@ def update_task(
 
     db.commit()
     db.refresh(task)
-    return task
+    enriched = _enrich_tasks(db, [task])
+    return enriched[0]
 
 
 @router.post("/{task_id}/restore", response_model=TaskResponse)
