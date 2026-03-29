@@ -330,7 +330,11 @@ def start_sprint(
 
 
 @router.post("/{sprint_id}/complete", response_model=SprintResponse)
-def complete_sprint(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
+def complete_sprint(
+    sprint_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Conclui o sprint:
     - status = completed
@@ -371,6 +375,7 @@ def complete_sprint(sprint_id: uuid.UUID, db: Session = Depends(get_db)):
     sprint.velocity = done_count
 
     _log(db, sprint.id, "sprint_completed",
+         user_id    = str(current_user.id),
          extra_data = {
              "velocity":      done_count,
              "duration_days": duration_days,

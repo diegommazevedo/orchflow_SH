@@ -233,7 +233,10 @@ async def validate_security_config():
 
 @app.on_event("startup")
 def on_startup():
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        logger.error(f"❌ Base.metadata.create_all failed (DB may be unavailable): {exc}")
 
     # Auth schema drift fix for older production databases.
     try:
