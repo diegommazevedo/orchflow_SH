@@ -14,11 +14,13 @@ if DATABASE_URL.startswith("postgres://"):
 _is_production = os.getenv("ENVIRONMENT", "development") == "production"
 _engine_kwargs: dict = {
     "pool_pre_ping": True,
-    "pool_recycle": 1800,  # recicla conexões a cada 30min
+    "pool_recycle": 1800,   # recicla conexões a cada 30min
+    "pool_timeout": 10,     # desiste de pegar conexão do pool após 10s
+    "connect_args": {"connect_timeout": 10},  # timeout TCP para cada handshake
 }
 # SSL obrigatório em produção (Railway/Postgres exige)
 if _is_production and DATABASE_URL.startswith("postgresql"):
-    _engine_kwargs["connect_args"] = {"sslmode": "require"}
+    _engine_kwargs["connect_args"] = {"sslmode": "require", "connect_timeout": 10}
 
 engine = create_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

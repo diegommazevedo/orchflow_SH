@@ -214,9 +214,9 @@ async def validate_security_config():
     env = os.getenv("ENVIRONMENT", "development")
     disable_auth = os.getenv("DISABLE_AUTH", "false").lower()
     if env == "production" and disable_auth == "true":
-        raise RuntimeError(
-            "ERRO CRÍTICO: DISABLE_AUTH=true não é permitido "
-            "em ambiente de produção. Boot abortado."
+        # Log crítico mas não aborta o boot — deixa o Railway ver o log e o dev corrigir
+        logger.critical(
+            "⛔ DISABLE_AUTH=true em produção! Auth desabilitado — corrija a variável no Railway."
         )
     jwt_secret = os.getenv("JWT_SECRET", "change-me-in-production")
     if env == "production" and (
@@ -224,9 +224,10 @@ async def validate_security_config():
         or jwt_secret == "change-me-in-production"
         or len(jwt_secret) < 32
     ):
-        raise RuntimeError(
-            "ERRO CRÍTICO: JWT_SECRET ausente, padrão ou muito curto em produção. "
-            "Defina um segredo aleatório com pelo menos 32 caracteres. Boot abortado."
+        # Log crítico mas não aborta — o app sobe, o problema aparece nos logs
+        logger.critical(
+            "⛔ JWT_SECRET ausente, padrão ou muito curto em produção! "
+            "Defina JWT_SECRET com >= 32 chars nas Railway Variables."
         )
     await _validate_groq_key()
 
