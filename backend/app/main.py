@@ -1,6 +1,12 @@
 import logging
 import os
 
+# Garante que loggers da aplicação aparecem no terminal do uvicorn
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:     %(name)s — %(message)s",
+)
+
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -360,12 +366,29 @@ def on_startup():
     except Exception:
         pass
 
+    # V3: multi-tenant workspace_id on projects (ADD COLUMN idempotente para DBs antigos)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS workspace_id UUID "
+                "REFERENCES workspaces(id) ON DELETE SET NULL"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_projects_workspace_id "
+                "ON projects(workspace_id) WHERE workspace_id IS NOT NULL"
+            ))
+            conn.commit()
+    except Exception:
+        pass
+
     db = SessionLocal()
     try:
         from app.v2_seed import seed_vertical_templates, backfill_all_projects_kanban
 
         seed_vertical_templates(db)
         backfill_all_projects_kanban(db)
+    except Exception as e:
+        logger.warning(f"⚠️  Seed/backfill falhou (não crítico, continuando boot): {e}")
     finally:
         db.close()
 
