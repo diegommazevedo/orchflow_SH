@@ -94,22 +94,29 @@ class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(LimitRequestSizeMiddleware)
 
-_DEFAULT_ORIGINS = [
+_LOCALHOST_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
     "http://localhost:5180",
-    "https://orchflow-sh.vercel.app",
-    "https://orchflow-sh-git-main-diegommazevedos-projects.vercel.app",
-    "https://orchflow-olr0iao3c-diegommazevedos-projects.vercel.app",
 ]
+# Regex cobre qualquer subdomínio Vercel + Railway sem depender de match exato de string
+_CORS_REGEX = (
+    r"https://orchflow-sh\.vercel\.app"
+    r"|https://orchflow-.*\.vercel\.app"
+    r"|https://.*\.up\.railway\.app"
+)
 _extra = os.getenv("ALLOWED_ORIGINS", "")
 _extra_list = [o.strip() for o in _extra.split(",") if o.strip()]
-_all_origins = list(dict.fromkeys(_DEFAULT_ORIGINS + _extra_list))
+_all_origins = list(dict.fromkeys(_LOCALHOST_ORIGINS + _extra_list))
+
+logger.info(f"CORS explicit origins: {_all_origins}")
+logger.info(f"CORS origin regex: {_CORS_REGEX}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_all_origins,
+    allow_origin_regex=_CORS_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
