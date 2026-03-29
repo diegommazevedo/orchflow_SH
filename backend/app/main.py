@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 # Garante que loggers da aplicação aparecem no terminal do uvicorn
 logging.basicConfig(
@@ -12,6 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from sqlalchemy import text
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -100,15 +102,64 @@ _LOCALHOST_ORIGINS = [
     "http://localhost:5175",
     "http://localhost:5180",
 ]
-# Regex cobre qualquer subdomínio Vercel + Railway sem depender de match exato de string
+# Produção Vercel — lista explícita (preflight não depende só do regex; deploys antigos falhavam sem isto)
+_VERCEL_DEFAULT_ORIGINS = [
+    "https://orchflow-sh.vercel.app",
+]
+# Regex: previews Vercel (orchflow-*) + Railway; fullmatch no Origin
 _CORS_REGEX = (
     r"https://orchflow-sh\.vercel\.app"
-    r"|https://orchflow-.*\.vercel\.app"
+    r"|https://orchflow-[\w.-]+\.vercel\.app"
     r"|https://.*\.up\.railway\.app"
 )
 _extra = os.getenv("ALLOWED_ORIGINS", "")
-_extra_list = [o.strip() for o in _extra.split(",") if o.strip()]
-_all_origins = list(dict.fromkeys(_LOCALHOST_ORIGINS + _extra_list))
+_extra_list = [o.strip().rstrip("/") for o in _extra.split(",") if o.strip()]
+_all_origins = list(
+    dict.fromkeys(_LOCALHOST_ORIGINS + _VERCEL_DEFAULT_ORIGINS + _extra_list)
+)
+_ORIGIN_SET = frozenset(_all_origins)
+_compiled_cors_regex = re.compile(_CORS_REGEX)
+
+
+def _cors_origin_allowed(origin: str | None) -> bool:
+    if not origin:
+        return False
+    if origin in _ORIGIN_SET:
+        return True
+    return _compiled_cors_regex.fullmatch(origin) is not None
+
+
+class OrchFlowCorsGuardMiddleware(BaseHTTPMiddleware):
+    """
+    Camada mais externa: responde OPTIONS (preflight) com headers CORS explícitos
+    e repõe ACAO em respostas que ainda não o tenham (erros 4xx/5xx, JSONResponse direto).
+    Complementa o CORSMiddleware em cenários Railway/proxy.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        if request.method == "OPTIONS" and _cors_origin_allowed(origin):
+            req_h = request.headers.get("access-control-request-headers", "")
+            allow_headers = req_h if req_h.strip() else "*"
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
+                    "Access-Control-Allow-Headers": allow_headers,
+                    "Access-Control-Max-Age": "86400",
+                },
+            )
+        response = await call_next(request)
+        if _cors_origin_allowed(origin):
+            h = response.headers
+            if "access-control-allow-origin" not in h:
+                h["Access-Control-Allow-Origin"] = origin
+            if "access-control-allow-credentials" not in h:
+                h["Access-Control-Allow-Credentials"] = "true"
+        return response
+
 
 logger.info(f"CORS explicit origins: {_all_origins}")
 logger.info(f"CORS origin regex: {_CORS_REGEX}")
@@ -121,6 +172,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Último add_middleware = mais externo = corre antes de tudo (preflight estável)
+app.add_middleware(OrchFlowCorsGuardMiddleware)
 
 
 async def _validate_groq_key() -> None:
