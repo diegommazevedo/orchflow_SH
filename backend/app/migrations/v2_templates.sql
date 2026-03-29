@@ -1,0 +1,5 @@
+-- Executar APÓS v2_custom_fields.sql (referência)
+-- A tabela vertical_templates é criada pelo SQLAlchemy (create_all).
+-- Seeds de sistema: software_house, advocacia, clinica, construtora — ver app.v2_seed.VERTICAL_TEMPLATES.
+-- Colunas do modelo: name, slug, description, custom_fields (JSONB), kanban_columns (JSONB),
+-- agent_configs (JSONB), is_public, created_at.

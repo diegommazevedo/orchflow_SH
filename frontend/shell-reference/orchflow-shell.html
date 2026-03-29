@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrchFlow</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap');
+:root {
+  --bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:#1c1c2e;--border2:#252538;
+  --text:#d4d4e8;--muted:#4a4a6a;--accent:#7c6df0;--accent2:#5eead4;--red:#f43f5e;--amber:#f59e0b;
+  --sidebar-w:220px;--chat-w:320px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+.topbar{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;}
+.logo{font-size:14px;font-weight:800;letter-spacing:-0.03em;display:flex;align-items:center;gap:6px;}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(.8);}}
+.topbar-project{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-left:8px;padding-left:16px;border-left:1px solid var(--border);}
+.topbar-project span{color:var(--accent2);}
+.topbar-right{margin-left:auto;}
+.avatar{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.shell{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.sidebar-section{padding:16px 12px 8px;}
+.sidebar-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;padding:0 4px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;position:relative;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:#7c6df018;color:var(--text);border:1px solid #7c6df030;}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:16px;background:var(--accent);border-radius:0 3px 3px 0;}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);padding:1px 6px;border-radius:10px;}
+.nav-badge.hot{background:#f43f5e15;border-color:#f43f5e30;color:var(--red);}
+.project-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;}
+.project-item:hover{background:var(--surface2);color:var(--text);}
+.project-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.roi-widget{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.roi-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.roi-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.roi-key{font-size:11px;color:var(--muted);}
+.roi-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent2);}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.main-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.main-title{font-size:18px;font-weight:800;letter-spacing:-0.02em;}
+.main-subtitle{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px;}
+.view-tabs{margin-left:auto;display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;}
+.view-tab{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;color:var(--muted);transition:all .15s;letter-spacing:.05em;}
+.view-tab.active{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.board{flex:1;overflow-x:auto;overflow-y:hidden;padding:20px 24px;display:flex;gap:16px;align-items:flex-start;}
+.column{width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;}
+.col-header{display:flex;align-items:center;gap:8px;padding:0 4px 8px;}
+.col-dot{width:8px;height:8px;border-radius:50%;}
+.col-name{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.col-count{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto;}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;animation:slideIn .3s ease forwards;opacity:0;}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.task-card:nth-child(1){animation-delay:.05s;}.task-card:nth-child(2){animation-delay:.1s;}.task-card:nth-child(3){animation-delay:.15s;}
+.task-card:hover{border-color:var(--border2);background:var(--surface2);transform:translateY(-1px);}
+.task-card-top{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.q-pill{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.05em;}
+.q1-pill{background:#f43f5e15;color:var(--red);border:1px solid #f43f5e25;}
+.q2-pill{background:#f59e0b15;color:var(--amber);border:1px solid #f59e0b25;}
+.task-id{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:auto;}
+.task-title{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:10px;}
+.task-meta{display:flex;align-items:center;gap:8px;}
+.task-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);}
+.task-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto;}
+.add-card{border:1px dashed var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;}
+.add-card:hover{border-color:var(--accent);color:var(--accent);background:#7c6df008;}
+.chat-panel{width:var(--chat-w);border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;flex-shrink:0;}
+.chat-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.chat-title{font-size:13px;font-weight:700;}
+.chat-status{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent2);}
+.status-dot{width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:pulse 2s infinite;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.msg{display:flex;flex-direction:column;gap:4px;animation:slideIn .2s ease forwards;}
+.msg-sender{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;padding-left:2px;}
+.msg-bubble{padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.6;}
+.msg-user .msg-bubble{background:#7c6df015;border:1px solid #7c6df025;color:var(--text);border-radius:8px 8px 2px 8px;}
+.msg-user .msg-sender{align-self:flex-end;}
+.msg-agent .msg-bubble{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px 8px 8px 2px;}
+.action-card{background:#5eead415;border:1px solid #5eead430;border-radius:8px;padding:10px 12px;font-size:11px;margin-top:4px;}
+.action-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.action-text{color:var(--text);line-height:1.5;}
+.action-btns{display:flex;gap:6px;margin-top:8px;}
+.action-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 10px;border-radius:5px;cursor:pointer;border:none;transition:all .15s;}
+.btn-confirm{background:var(--accent2);color:#0a0a0f;font-weight:600;}
+.btn-cancel{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+.chat-input-area{padding:12px;border-top:1px solid var(--border);}
+.chat-input-wrap{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;display:flex;align-items:flex-end;gap:8px;padding:8px 10px;transition:border-color .15s;}
+.chat-input-wrap:focus-within{border-color:var(--accent);}
+.chat-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:13px;resize:none;max-height:80px;line-height:1.5;}
+.chat-input::placeholder{color:var(--muted);}
+.send-btn{width:28px;height:28px;background:var(--accent);border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:12px;color:#fff;}
+.send-btn:hover{opacity:.85;}
+.chat-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-align:center;margin-top:6px;letter-spacing:.05em;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>OrchFlow</div>
+  <div class="topbar-project">projeto ativo: <span>OrchFlow MVP</span></div>
+  <div class="topbar-right"><div class="avatar">VC</div></div>
+</div>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Workspace</div>
+      <div class="nav-item active"><span class="nav-icon">⬛</span>Backlog<span class="nav-badge hot">5</span></div>
+      <div class="nav-item"><span class="nav-icon">◈</span>Matriz</div>
+      <div class="nav-item"><span class="nav-icon">◷</span>Tempo & ROI</div>
+      <div class="nav-item"><span class="nav-icon">⬡</span>Agentes</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Projetos</div>
+      <div class="project-item"><div class="project-dot" style="background:#7c6df0"></div>OrchFlow MVP</div>
+      <div class="project-item"><div class="project-dot" style="background:#5eead4"></div>Cliente Alpha</div>
+      <div class="project-item"><div class="project-dot" style="background:#f59e0b"></div>Estudo Agno</div>
+      <div class="project-item" style="color:#7c6df0;margin-top:4px;">+ novo projeto</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="roi-widget">
+        <div class="roi-label">// ROI semana</div>
+        <div class="roi-row"><span class="roi-key">tempo hoje</span><span class="roi-val">4h 32m</span></div>
+        <div class="roi-row"><span class="roi-key">tarefas</span><span class="roi-val">3 / 7</span></div>
+        <div class="roi-row"><span class="roi-key">foco</span><span class="roi-val" style="color:#7c6df0">Q1 → Q2</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title">Backlog</div>
+        <div class="main-subtitle">// orchflow-mvp · sprint 1 · semana 1</div>
+      </div>
+      <div class="view-tabs">
+        <div class="view-tab active">board</div>
+        <div class="view-tab">lista</div>
+        <div class="view-tab">matriz</div>
+        <div class="view-tab">timeline</div>
+      </div>
+    </div>
+    <div class="board">
+      <div class="column">
+        <div class="col-header"><div class="col-dot" style="background:#4a4a6a"></div><div class="col-name">Backlog</div><div class="col-count">2 itens</div></div>
+        <div class="task-card">
+          <div class="task-card-top"><span class="q-pill q2-pill">Q2</span><span class="task-id">#009</span></div>
+          <div class="task-title">View da Matriz de Eisenhower</div>
+          <div class="task-meta"><span class="task-tag">frontend</span><span class="task-time">⏱ 2d</span></div>
+        </div>
+        <div class="task-card">
+          <div class="task-card-top"><span class="q-pill q2-pill">Q2</span><span class="task-id">#010</span></div>
+          <div class="task-title">Timer por tarefa — controle de tempo</div>
+          <div class="task-meta"><span class="task-tag">frontend</span><span class="task-tag">backend</span><span class="task-time">⏱ 2d</span></div>
+        </div>
+        <div class="add-card">+ adicionar tarefa</div>
+      </div>
+      <div class="column">
+        <div class="col-header"><div class="col-dot" style="background:#7c6df0"></div><div class="col-name">Em andamento</div><div class="col-count">2 itens</div></div>
+        <div class="task-card">
+          <div class="task-card-top"><span class="q-pill q1-pill">Q1</span><span class="task-id">#002</span></div>
+          <div class="task-title">Layout 3 colunas — shell do sistema</div>
+          <div class="task-meta"><span class="task-tag">frontend</span><span class="task-time">⏱ 3d</span></div>
+        </div>
+        <div class="task-card">
+          <div class="task-card-top"><span class="q-pill q1-pill">Q1</span><span class="task-id">#003</span></div>
+          <div class="task-title">Schema do banco de dados</div>
+          <div class="task-meta"><span class="task-tag">banco</span><span class="task-tag">backend</span><span class="task-time">⏱ 1d</span></div>
+        </div>
+      </div>
+      <div class="column">
+        <div class="col-header"><div class="col-dot" style="background:#5eead4"></div><div class="col-name">Concluído</div><div class="col-count">1 item</div></div>
+        <div class="task-card" style="opacity:.6">
+          <div class="task-card-top"><span class="q-pill q1-pill">Q1</span><span class="task-id">#001</span></div>
+          <div class="task-title">Setup do projeto — estrutura base</div>
+          <div class="task-meta"><span class="task-tag">infra</span><span class="task-time" style="color:#5eead4">✓ 1d 4h</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div style="font-size:16px">⬡</div>
+      <div><div class="chat-title">Agente OrchFlow</div></div>
+      <div class="chat-status"><div class="status-dot"></div>online</div>
+    </div>
+    <div class="chat-messages" id="messages">
+      <div class="msg msg-agent">
+        <div class="msg-sender">// agente</div>
+        <div class="msg-bubble">Olá. Estou conectado ao seu workspace.<br><br>Você tem <strong>2 tarefas em andamento</strong> e <strong>5 cards no sprint 1</strong>. O que quer fazer agora?</div>
+      </div>
+      <div class="msg msg-user">
+        <div class="msg-sender">você //</div>
+        <div class="msg-bubble">cria uma tarefa pra revisar o schema do banco amanhã de manhã</div>
+      </div>
+      <div class="msg msg-agent">
+        <div class="msg-sender">// agente</div>
+        <div class="msg-bubble">Entendido. Preparei o card:</div>
+        <div class="action-card">
+          <div class="action-label">→ nova tarefa</div>
+          <div class="action-text"><strong>Revisar schema do banco</strong><br>Projeto: OrchFlow MVP<br>Status: Backlog · Quadrante: Q2<br>Prazo: amanhã</div>
+          <div class="action-btns">
+            <button class="action-btn btn-confirm" onclick="confirmTask(event)">✓ confirmar</button>
+            <button class="action-btn btn-cancel">editar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" placeholder="diga o que quer fazer..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">↑</button>
+      </div>
+      <div class="chat-hint">enter para enviar · shift+enter nova linha</div>
+    </div>
+  </div>
+</div>
+<script>
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function sendMessage(){const input=document.getElementById('chatInput');const text=input.value.trim();if(!text)return;addMessage('user',text);input.value='';input.style.height='auto';setTimeout(()=>{addMessage('agent','Processando sua solicitação...');},600);}
+function addMessage(role,text){const c=document.getElementById('messages');const d=document.createElement('div');d.className=`msg msg-${role}`;d.innerHTML=`<div class="msg-sender">${role==='user'?'você //':'// agente'}</div><div class="msg-bubble">${text}</div>`;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function confirmTask(e){const c=document.getElementById('messages');const d=document.createElement('div');d.className='msg msg-agent';d.innerHTML='<div class="msg-sender">// agente</div><div class="msg-bubble">✓ Card criado no backlog. <strong>Revisar schema do banco</strong> adicionado ao Sprint 1.</div>';c.appendChild(d);c.scrollTop=c.scrollHeight;e.target.textContent='✓ feito';e.target.style.opacity='0.5';e.target.disabled=true;}
+</script>
+</body>
+</html>

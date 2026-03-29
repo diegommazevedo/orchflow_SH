@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3 -c \"import zipfile; print\\(''ok''\\)\")",
+      "Bash(python -c \"import zipfile; print\\(''ok''\\)\")",
+      "Bash(powershell.exe -Command \"New-Item -ItemType Directory -Force -Path ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\docs'' | Out-Null; Expand-Archive -Path ''C:\\\\Users\\\\fzeni\\\\Downloads\\\\files \\(1\\).zip'' -DestinationPath ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\docs'' -Force; Write-Host ''Extraido''\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\docs'' | Select-Object Name, Length | Format-Table -AutoSize\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g''; node --version; npm --version\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g''; npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias ''@/*'' --no-turbopack 2>&1\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g''; npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias ''@/*'' --no-turbopack --no-react-compiler --yes 2>&1\")",
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(powershell.exe -Command \"New-Item -ItemType File -Force ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\CLAUDE.md'' | Out-Null; Write-Host ''ok''\")",
+      "Bash(powershell.exe -Command \"New-Item -ItemType Directory -Force ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\.claude'' | Out-Null; Write-Host ''ok''\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g''; Start-Process -FilePath ''npm'' -ArgumentList ''run'',''dev'' -NoNewWindow -PassThru | Select-Object Id; Write-Host ''servidor iniciado em http://localhost:3000''\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\src'' -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName | Format-Table -AutoSize\")",
+      "Bash(powershell.exe -Command \"New-Item -ItemType Directory -Force ''C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\quantum5g\\\\supabase'' | Out-Null; Write-Host ''ok''\")",
+      "Bash(ls \"C:\\\\Users\\\\fzeni\\\\OneDrive\\\\Projects\\\\orchflow\\\\.claude\"\" 2>/dev/null || echo \"sem .claude \")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(command -v npm)",
+      "Bash(where npm:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \":*)",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/diagnostics?select=id,name,status&order=created_at.desc\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\")",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/ic_responses?diagnostic_id=eq.02ee6c74-8079-4488-a80b-2f01062ba472&select=respondente_anonimo_id\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Prefer: count=exact\" -I)",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/il_responses?diagnostic_id=eq.02ee6c74-8079-4488-a80b-2f01062ba472&select=id\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\")",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/diagnostics?id=eq.02ee6c74-8079-4488-a80b-2f01062ba472&select=id,name,status,consultant_id\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\")",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/profiles?select=id,email,role\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\")",
+      "Bash(curl -s -X POST \"https://ikielkwgixbdzrwixtos.supabase.co/functions/v1/calculate_diagnostic\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Content-Type: application/json\" -d '{\"\"diagnostic_id\"\":\"\"02ee6c74-8079-4488-a80b-2f01062ba472\"\"}')",
+      "Bash(curl -s \"https://ikielkwgixbdzrwixtos.supabase.co/rest/v1/diagnostics?id=eq.02ee6c74-8079-4488-a80b-2f01062ba472&select=id,status\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlraWVsa3dnaXhiZHpyd2l4dG9zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM5MjM0MiwiZXhwIjoyMDg5OTY4MzQyfQ.hCOUP8ovNKjbkMPm8Sss0iHRkp90uG3vqvd-PjrELfU\")",
+      "Bash(npx supabase:*)"
+    ]
+  }
+}
