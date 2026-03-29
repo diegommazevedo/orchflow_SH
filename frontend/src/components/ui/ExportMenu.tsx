@@ -7,7 +7,7 @@
  * - CORS mantido (requests para /api/export/*)
  */
 import { useState, useRef, useEffect } from 'react'
-import { friendlyHttpStatus, getApiAuthHeaders } from '../../services/api'
+import { API_ROOT, friendlyHttpStatus, getApiAuthHeaders } from '../../services/api'
 
 interface Props {
   projectId: string
@@ -85,7 +85,7 @@ export function ExportMenu({ projectId, projectName }: Props) {
     setOpen(false)
 
     try {
-      const res = await fetch(opt.url(projectId), { headers: getApiAuthHeaders() })
+      const res = await fetch(`${API_ROOT}${opt.url(projectId)}`, { headers: getApiAuthHeaders() })
       if (!res.ok) {
         const msg = friendlyHttpStatus(res.status)
         window.dispatchEvent(new CustomEvent('orchflow:api-error', { detail: { message: msg } }))
