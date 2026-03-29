@@ -24,9 +24,9 @@ RUN mkdir -p /app/logs && \
 
 USER appuser
 
-# Railway injeta PORT via env var; default 8010 para dev local
-ENV PORT=8010
-EXPOSE ${PORT}
+# Railway injeta PORT via env var (tipicamente 8080); fallback 8080 para dev local
+# EXPOSE com valor fixo evita que o build avalie a variável incorretamente
+EXPOSE 8080
 
-# CMD usa sh para expandir $PORT em runtime
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# CMD usa sh para expandir $PORT em runtime (Railway sobrescreve com o valor real)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
