@@ -136,6 +136,16 @@ async function _tryRefreshAccessToken(): Promise<string | null> {
   }
 }
 
+/** Limpa cache do React Query, tokens e notifica a app. Idempotente se chamado duas vezes (ex.: 401 no refresh + retry null). */
+async function _clearSessionAfterAuthFailure(): Promise<void> {
+  await queryClient.cancelQueries()
+  queryClient.clear()
+  _accessToken = null
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(WORKSPACE_KEY)
+  window.dispatchEvent(new CustomEvent('orchflow:logout'))
+}
+
 api.interceptors.response.use(
   res => res,
   async err => {
@@ -143,13 +153,17 @@ api.interceptors.response.use(
       return Promise.reject(err)
     }
     const original = err.config
+    const isRefreshCall = (original?.url ?? '').includes('/auth/refresh')
+
+    // 401 no próprio refresh (cookie inválido/expirado) — mesmo tratamento que refresh falho no retry
+    if (err.response?.status === 401 && isRefreshCall) {
+      await _clearSessionAfterAuthFailure()
+      return Promise.reject(err)
+    }
+
     // Tenta refresh em qualquer 401 — cookie httpOnly é enviado automaticamente
     // Guard: nunca tentar refresh se a própria requisição de refresh falhou (evita deadlock)
-    if (
-      err.response?.status === 401 &&
-      !original?._retried &&
-      !(original?.url ?? '').includes('/auth/refresh')
-    ) {
+    if (err.response?.status === 401 && !original?._retried && !isRefreshCall) {
       if (!_refreshPromise) _refreshPromise = _tryRefreshAccessToken()
       const nextToken = await _refreshPromise
       _refreshPromise = null
@@ -160,12 +174,7 @@ api.interceptors.response.use(
         return api.request(original)
       }
       // Refresh falhou → encerra sessão e evita loop de refetch do React Query
-      await queryClient.cancelQueries()
-      queryClient.clear()
-      _accessToken = null
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(WORKSPACE_KEY)
-      window.dispatchEvent(new CustomEvent('orchflow:logout'))
+      await _clearSessionAfterAuthFailure()
       return Promise.reject(err)
     }
     const msg = friendlyAxiosMessage(err)
