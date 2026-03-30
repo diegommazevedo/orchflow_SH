@@ -38,6 +38,7 @@ import type {
   AIEngine,
   Sprint,
 } from '../types'
+import { queryClient } from '../queryClient'
 
 const TOKEN_KEY = 'orchflow-token'
 const WORKSPACE_KEY = 'orchflow-workspace-id'
@@ -158,11 +159,14 @@ api.interceptors.response.use(
         original.headers['Authorization'] = `Bearer ${nextToken}`
         return api.request(original)
       }
-      // Refresh falhou → sessão encerrada
+      // Refresh falhou → encerra sessão e evita loop de refetch do React Query
+      await queryClient.cancelQueries()
+      queryClient.clear()
       _accessToken = null
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(WORKSPACE_KEY)
-      window.dispatchEvent(new Event('orchflow:logout'))
+      window.dispatchEvent(new CustomEvent('orchflow:logout'))
+      return Promise.reject(err)
     }
     const msg = friendlyAxiosMessage(err)
     window.dispatchEvent(new CustomEvent('orchflow:api-error', { detail: { message: msg } }))

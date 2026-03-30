@@ -46,6 +46,16 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 const TOKEN_KEY = 'orchflow-token'
 const WORKSPACE_KEY = 'orchflow-workspace-id'
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number }
+    if (payload.exp == null) return true
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -80,6 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = useCallback(async () => {
     const wsId = localStorage.getItem(WORKSPACE_KEY)
+    const maybeStored = getApiAccessToken() ?? localStorage.getItem(TOKEN_KEY)
+    if (maybeStored && isTokenExpired(maybeStored)) {
+      setApiAccessToken(null)
+      localStorage.removeItem(TOKEN_KEY)
+    }
 
     // Se não há token em memória, tenta restaurar via refresh (cookie httpOnly)
     if (!getApiAccessToken()) {
@@ -128,6 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+
+  useEffect(() => {
+    const onForcedLogout = () => {
+      _clearSession()
+      setIsLoading(false)
+    }
+    window.addEventListener('orchflow:logout', onForcedLogout)
+    return () => window.removeEventListener('orchflow:logout', onForcedLogout)
+  }, [_clearSession])
 
   // ── login ─────────────────────────────────────────────────────────────────
 
